@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Clock,
   Copy,
+  Send,
   Sun,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -62,14 +63,15 @@ const MONTH_GENITIVE: Record<number, string> = {
   11: 'декабря',
 };
 
-// Hours 09..20 mapped cleanly to their true 12-hour analog clock positions (12 at top = 0deg)
+// Studio hours 09..20 mapped cleanly to true 12-hour dial slots (index 0 = 12 o'clock at 0deg)
 const CLOCK_HOURS = [12, 13, 14, 15, 16, 17, 18, 19, 20, 9, 10, 11];
+const TELEGRAM_HANDLE = 'Luccky33';
 
 function getLightMood(hour: number): string {
-  if (hour <= 11) return 'Мягкий утренний свет · мало людей на улицах';
-  if (hour <= 14) return 'Высокий дневной свет · идеально для студии и галерей';
-  if (hour <= 17) return 'Золотой час · тёплый объёмный свет и длинные тени';
-  return 'Вечерний свет · студийный контраст или городской неон';
+  if (hour <= 11) return 'Утренний мягкий свет и свободные улицы для прогулки.';
+  if (hour <= 14) return 'Яркий дневной свет — хорошо для залов с большими окнами.';
+  if (hour <= 17) return 'Тёплое предзакатное солнце и мягкие тени на улице.';
+  return 'Вечер — подходит для студийного света или съёмки с огнями города.';
 }
 
 export function BookingSection({
@@ -90,26 +92,85 @@ export function BookingSection({
   const [selectedHour, setSelectedHour] = React.useState<number>(16);
   const [selectedMinute, setSelectedMinute] = React.useState<'00' | '30'>('30');
 
+  // Interactive clock dial drag & live moving second hand
+  const dialRef = React.useRef<HTMLDivElement | null>(null);
+  const [isDraggingDial, setIsDraggingDial] = React.useState(false);
+  const [dragAngle, setDragAngle] = React.useState<number | null>(null);
+  const [secondAngle, setSecondAngle] = React.useState<number>(() => {
+    const now = new Date();
+    return (now.getSeconds() + now.getMilliseconds() / 1000) * 6;
+  });
+
   const [name, setName] = React.useState('');
   const [contact, setContact] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
-  const [submittedCode, setSubmittedCode] = React.useState<string | null>(null);
+  const [isReadyToSend, setIsReadyToSend] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
 
-  const activeMonth = CALENDAR_MONTHS[monthCursor];
+  // Smoothly moving second hand around the clock face
+  React.useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let raf = 0;
+    const tick = () => {
+      const now = new Date();
+      const angle = (now.getSeconds() + now.getMilliseconds() / 1000) * 6;
+      setSecondAngle(angle);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
+  const updateHourFromPointer = React.useCallback((clientX: number, clientY: number) => {
+    const el = dialRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+    let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+    if (deg < 0) deg += 360;
+    setDragAngle(deg);
+    const slotIndex = Math.round(deg / 30) % 12;
+    setSelectedHour(CLOCK_HOURS[slotIndex]);
+  }, []);
+
+  const handleDialPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsDraggingDial(true);
+    updateHourFromPointer(e.clientX, e.clientY);
+  };
+
+  const handleDialPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingDial) return;
+    updateHourFromPointer(e.clientX, e.clientY);
+  };
+
+  const handleDialPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingDial) return;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setIsDraggingDial(false);
+    setDragAngle(null);
+  };
+
+  const activeMonth = CALENDAR_MONTHS[monthCursor];
   const activeFormat =
     SHOOT_FORMATS.find((f) => f.id === selectedFormatId) || SHOOT_FORMATS[0];
   const activeAddons = SHOOT_ADDONS.filter((a) => selectedAddons.includes(a.id));
   const totalPrice =
-    activeFormat.price + activeAddonItemsSum(activeAddons);
+    activeFormat.price + activeAddons.reduce((sum, item) => sum + item.price, 0);
 
   const formattedDate = `${selectedDay.day} ${MONTH_GENITIVE[selectedDay.monthIndex]} ${selectedDay.year}`;
   const formattedTime = `${String(selectedHour).padStart(2, '0')}:${selectedMinute}`;
 
   // Clock hand angles
-  const hourAngle = (selectedHour % 12) * 30 + (selectedMinute === '30' ? 15 : 0);
+  const targetHourAngle = (selectedHour % 12) * 30 + (selectedMinute === '30' ? 15 : 0);
+  const hourAngle = isDraggingDial && dragAngle !== null ? dragAngle : targetHourAngle;
   const minuteAngle = selectedMinute === '30' ? 180 : 0;
 
   const switchMonth = (dir: -1 | 1) => {
@@ -119,6 +180,32 @@ export function BookingSection({
     setMonthCursor(next);
   };
 
+  const buildTelegramMessage = () => {
+    const lines = [
+      'Привет! Хочу записаться на фотосессию (exposure).',
+      '',
+      `Формат: ${activeFormat.title}`,
+      `Дата и время: ${formattedDate}, ${formattedTime}`,
+      activeAddons.length
+        ? `Доп. опции: ${activeAddons.map((a) => a.label).join(', ')}`
+        : 'Доп. опции: базовый пакет',
+      `Ориентир по бюджету: ${formatRubles(totalPrice)}`,
+      '',
+      `Имя: ${name.trim()}`,
+      `Контакт: ${contact.trim() || email.trim()}`,
+    ];
+    if (email.trim() && contact.trim()) {
+      lines.push(`Email: ${email.trim()}`);
+    }
+    if (briefText.trim()) {
+      lines.push(`Пожелания: ${briefText.trim()}`);
+    }
+    return lines.join('\n');
+  };
+
+  const telegramMessage = buildTelegramMessage();
+  const telegramUrl = `https://t.me/${TELEGRAM_HANDLE}?text=${encodeURIComponent(telegramMessage)}`;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanName = name.trim();
@@ -126,28 +213,25 @@ export function BookingSection({
     const cleanEmail = email.trim();
 
     if (cleanName.length < 2) {
-      setError('Укажите, пожалуйста, ваше имя.');
+      setError('Напишите ваше имя.');
       return;
     }
     if (cleanContact.length < 3 && !cleanEmail.includes('@')) {
-      setError('Оставьте Telegram, телефон или корректный email для связи.');
+      setError('Укажите Telegram, телефон или email, чтобы я мог ответить.');
       return;
     }
     if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      setError('Проверьте формат email — похоже, в адресе есть опечатка.');
+      setError('Похоже, в email есть опечатка — проверьте адрес.');
       return;
     }
 
     setError(null);
-    const code = `EXP-${String(selectedDay.day).padStart(2, '0')}${String(selectedHour).padStart(2, '0')}`;
-    setSubmittedCode(code);
+    setIsReadyToSend(true);
   };
-
-  const summaryText = `Заявка ${submittedCode || ''}\nФормат: ${activeFormat.title}\nДата и время: ${formattedDate}, ${formattedTime}\nИтого: ${formatRubles(totalPrice)}\nИмя: ${name}\nКонтакт: ${contact || email}\nИдея: ${briefText || 'Обсудим на созвоне'}`;
 
   const handleCopyBrief = async () => {
     try {
-      await navigator.clipboard.writeText(summaryText);
+      await navigator.clipboard.writeText(telegramMessage);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -162,20 +246,29 @@ export function BookingSection({
     >
       <div className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
-          <p className="text-sm font-medium text-[#FFB27C]">Онлайн-бронирование</p>
+          <p className="text-sm font-medium text-[#FFB27C]">Запись на съёмку</p>
           <h2 className="mt-2 font-display text-4xl sm:text-5xl font-medium tracking-tight text-[#FBF3EA]">
-            Выберите дату и время по часам
+            Выберите дату и время на часах
           </h2>
           <p className="mt-4 text-base leading-relaxed text-[#FBF3EA]/75">
-            Нажмите на свободный день в календаре и переведите стрелку часов на удобное
-            время старта — подсказка сразу покажет характер света в этот час.
+            Нажмите на свободный день в календаре, покрутите или кликните час на циферблате — и
+            отправьте готовую заявку мне в Telegram{' '}
+            <a
+              href={`https://t.me/${TELEGRAM_HANDLE}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#FFB27C] underline decoration-[#FFB27C]/40 underline-offset-4 hover:decoration-[#FFB27C]"
+            >
+              @{TELEGRAM_HANDLE}
+            </a>
+            .
           </p>
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">
-          {/* Left column: Interactive Animated Calendar + Interactive Clock Face */}
+          {/* Left column: Animated Monthly Calendar + Moving/Draggable Analog Clock */}
           <div className="lg:col-span-6 space-y-6">
-            {/* Animated Monthly Calendar */}
+            {/* Monthly Calendar */}
             <div className="rounded-2xl border border-white/12 bg-[#14100E]/85 backdrop-blur-md p-5 sm:p-6">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-[#FBF3EA]">
@@ -207,7 +300,6 @@ export function BookingSection({
                 </div>
               </div>
 
-              {/* Weekday headings */}
               <div className="mt-5 grid grid-cols-7 gap-1.5 text-center text-xs text-[#FBF3EA]/45">
                 {WEEKDAYS.map((wd) => (
                   <div key={wd} className="py-1">
@@ -216,7 +308,6 @@ export function BookingSection({
                 ))}
               </div>
 
-              {/* Animated Days Grid */}
               <div className="relative mt-2 overflow-hidden">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
@@ -277,12 +368,12 @@ export function BookingSection({
               </div>
             </div>
 
-            {/* Interactive Animated Clock Dial */}
+            {/* Interactive Clock Dial with moving second hand & draggable hour hand */}
             <div className="rounded-2xl border border-white/12 bg-[#14100E]/85 backdrop-blur-md p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-[#FBF3EA]">
                   <Clock size={16} className="text-[#FFB27C]" aria-hidden="true" />
-                  <span>Время старта на циферблате</span>
+                  <span>Время начала съёмки</span>
                 </div>
 
                 {/* Minute step toggle (:00 / :30) */}
@@ -318,27 +409,53 @@ export function BookingSection({
 
               <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-between">
                 {/* Analog Clock Dial */}
-                <div className="relative h-60 w-60 shrink-0 rounded-full border border-white/15 bg-[#0B0A09]/90 shadow-inner">
-                  {/* Subtle concentric dial ring */}
+                <div
+                  ref={dialRef}
+                  onPointerDown={handleDialPointerDown}
+                  onPointerMove={handleDialPointerMove}
+                  onPointerUp={handleDialPointerUp}
+                  onPointerCancel={handleDialPointerUp}
+                  className="relative h-60 w-60 shrink-0 select-none touch-none rounded-full border border-white/15 bg-[#0B0A09]/90 shadow-inner cursor-grab active:cursor-grabbing"
+                >
+                  {/* Concentric dial ring & tick marks */}
                   <div
                     aria-hidden="true"
                     className="pointer-events-none absolute inset-3 rounded-full border border-white/[0.06]"
                   />
+                  {Array.from({ length: 12 }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      aria-hidden="true"
+                      style={{ transform: `rotate(${idx * 30}deg)` }}
+                      className="pointer-events-none absolute left-1/2 top-2 h-1.5 w-px -ml-[0.5px] origin-[50%_112px] bg-white/15"
+                    />
+                  ))}
 
-                  {/* Animated Minute Hand */}
+                  {/* Minute Hand */}
                   <motion.div
                     aria-hidden="true"
                     animate={{ rotate: minuteAngle }}
                     transition={{ type: 'spring', stiffness: 180, damping: 20 }}
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-0.5 -ml-[1px] -mt-24 origin-bottom rounded-full bg-white/25"
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-[88px] w-0.5 -ml-[1px] -mt-[88px] origin-bottom rounded-full bg-white/30"
                   />
 
-                  {/* Animated Hour Hand */}
+                  {/* Interactive Hour Hand */}
                   <motion.div
                     aria-hidden="true"
                     animate={{ rotate: hourAngle }}
-                    transition={{ type: 'spring', stiffness: 240, damping: 22 }}
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-[74px] w-1 -ml-0.5 -mt-[74px] origin-bottom rounded-full bg-[#FFB27C] shadow-[0_0_16px_rgba(255,178,124,0.55)]"
+                    transition={
+                      isDraggingDial
+                        ? { duration: 0 }
+                        : { type: 'spring', stiffness: 240, damping: 22 }
+                    }
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-[72px] w-1 -ml-0.5 -mt-[72px] origin-bottom rounded-full bg-[#FFB27C] shadow-[0_0_16px_rgba(255,178,124,0.55)]"
+                  />
+
+                  {/* Continuously moving Second Hand */}
+                  <div
+                    aria-hidden="true"
+                    style={{ transform: `rotate(${secondAngle}deg)` }}
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-[108px] w-px -ml-[0.5px] -mt-[94px] origin-[50%_94px] bg-[#FFB27C]/75"
                   />
 
                   {/* Center pin */}
@@ -350,7 +467,7 @@ export function BookingSection({
                   {/* 12 Clickable Hour Buttons (09..20) */}
                   {CLOCK_HOURS.map((hour, index) => {
                     const angleRad = ((index * 30 - 90) * Math.PI) / 180;
-                    const radius = 92; // px from center (dial radius = 120px)
+                    const radius = 92;
                     const x = 120 + radius * Math.cos(angleRad);
                     const y = 120 + radius * Math.sin(angleRad);
                     const isSelected = selectedHour === hour;
@@ -373,9 +490,9 @@ export function BookingSection({
                   })}
                 </div>
 
-                {/* Live Digital Time & Light Mood Readout */}
+                {/* Live Digital Time & Light Mood */}
                 <div className="flex-1 text-center sm:text-left">
-                  <p className="text-xs text-[#FBF3EA]/55">Выбранный старт</p>
+                  <p className="text-xs text-[#FBF3EA]/55">Начало съёмки</p>
                   <motion.p
                     key={formattedTime}
                     initial={{ opacity: 0, y: 6 }}
@@ -387,6 +504,9 @@ export function BookingSection({
                   </motion.p>
                   <p className="mt-1 font-mono-tech text-xs text-[#FFB27C]">
                     {formattedDate}
+                  </p>
+                  <p className="mt-1.5 text-[11px] text-[#FBF3EA]/45">
+                    Нажмите на цифру или потяните стрелку
                   </p>
 
                   <div className="mt-4 flex items-start justify-center sm:justify-start gap-2 rounded-xl border border-white/10 bg-[#0B0A09]/75 p-3 text-left">
@@ -404,9 +524,9 @@ export function BookingSection({
             </div>
           </div>
 
-          {/* Right column: Booking Form or Confirmation Pass */}
+          {/* Right column: Booking Form -> Direct Telegram @Luccky33 Send */}
           <div className="lg:col-span-6">
-            {!submittedCode ? (
+            {!isReadyToSend ? (
               <form
                 onSubmit={handleSubmit}
                 noValidate
@@ -420,7 +540,7 @@ export function BookingSection({
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-[#FBF3EA]/55">Предварительная оценка</p>
+                    <p className="text-xs text-[#FBF3EA]/55">Стоимость</p>
                     <p className="mt-0.5 font-mono-tech text-xl font-medium text-[#FFB27C]">
                       {formatRubles(totalPrice)}
                     </p>
@@ -440,7 +560,7 @@ export function BookingSection({
                           key={fmt.id}
                           type="button"
                           onClick={() => onSelectFormat(fmt.id)}
-                          className={`rounded-lg border px-3.5 py-2 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors ${
                             active
                               ? 'border-[#FFB27C] bg-[#FFB27C] text-[#110D0B]'
                               : 'border-white/15 bg-transparent text-[#FBF3EA]/80 hover:border-white/35'
@@ -459,14 +579,14 @@ export function BookingSection({
                       htmlFor="booking-name"
                       className="block text-xs font-medium text-[#FBF3EA]/75"
                     >
-                      Ваше имя
+                      Как вас зовут
                     </label>
                     <input
                       id="booking-name"
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Например, Алиса"
+                      placeholder="Например, Алина"
                       className="mt-2 w-full rounded-xl border border-white/15 bg-[#0B0A09]/85 px-4 py-3 text-sm text-[#FBF3EA] placeholder:text-[#FBF3EA]/35 focus:border-[#FFB27C] focus:outline-none"
                     />
                   </div>
@@ -475,7 +595,7 @@ export function BookingSection({
                       htmlFor="booking-contact"
                       className="block text-xs font-medium text-[#FBF3EA]/75"
                     >
-                      Telegram или телефон
+                      Ваш Telegram или телефон
                     </label>
                     <input
                       id="booking-contact"
@@ -493,7 +613,7 @@ export function BookingSection({
                     htmlFor="booking-email"
                     className="block text-xs font-medium text-[#FBF3EA]/75"
                   >
-                    Email для отправки мудборда и галереи (необязательно)
+                    Email для ссылки на фото (если удобно)
                   </label>
                   <input
                     id="booking-email"
@@ -510,14 +630,14 @@ export function BookingSection({
                     htmlFor="booking-brief"
                     className="block text-xs font-medium text-[#FBF3EA]/75"
                   >
-                    Идея, настроение или ссылка на референсы
+                    Пожелания по съёмке
                   </label>
                   <textarea
                     id="booking-brief"
                     rows={3}
                     value={briefText}
                     onChange={(e) => onChangeBrief(e.target.value)}
-                    placeholder="Расскажите в двух словах, какие кадры хотите получить — студия, улица, плёнка или особый повод"
+                    placeholder="Где хотите сниматься, сколько человек будет, нужна ли помощь с выбором студии"
                     className="mt-2 w-full rounded-xl border border-white/15 bg-[#0B0A09]/85 px-4 py-3 text-sm text-[#FBF3EA] placeholder:text-[#FBF3EA]/35 focus:border-[#FFB27C] focus:outline-none"
                   />
                 </div>
@@ -530,16 +650,17 @@ export function BookingSection({
 
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-[#FBF3EA]/65">
-                    Слот:{' '}
+                    Выбрано:{' '}
                     <span className="font-mono-tech text-[#FBF3EA]">
                       {formattedDate} · {formattedTime}
                     </span>
                   </p>
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-full bg-[#FBF3EA] px-7 py-3.5 text-sm font-semibold text-[#110D0B] whitespace-nowrap shrink-0 cursor-pointer transition-colors duration-200 hover:bg-[#FFB27C] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#FFB27C]"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-[#FBF3EA] px-7 py-3.5 text-sm font-semibold text-[#110D0B] whitespace-nowrap shrink-0 cursor-pointer transition-colors duration-200 hover:bg-[#FFB27C] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#FFB27C]"
                   >
-                    Отправить заявку
+                    <Send size={15} />
+                    <span>Отправить в @Luccky33</span>
                   </button>
                 </div>
               </form>
@@ -552,60 +673,50 @@ export function BookingSection({
               >
                 <div className="flex items-center gap-3 text-[#FFB27C]">
                   <CheckCircle2 size={24} />
-                  <span className="font-mono-tech text-sm">Заявка {submittedCode} принята</span>
+                  <span className="font-mono-tech text-sm">
+                    Заявка готова для @{TELEGRAM_HANDLE}
+                  </span>
                 </div>
 
                 <h3 className="mt-3 font-display text-3xl font-medium text-[#FBF3EA]">
-                  {name}, слот предварительно закреплён
+                  {name.trim()}, осталось нажать кнопку отправки
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-[#FBF3EA]/75">
-                  Я свяжусь с вами по контакту{' '}
-                  <span className="text-[#FBF3EA] font-medium">{contact || email}</span>,
-                  чтобы обсудить локацию и прислать визуальные референсы.
+                  Нажмите на кнопку ниже — откроется ваш личный чат с{' '}
+                  <span className="font-medium text-[#FBF3EA]">@{TELEGRAM_HANDLE}</span>, где уже
+                  вставлен весь текст заявки с выбранной датой и стоимостью.
                 </p>
 
-                <dl className="mt-6 space-y-3 border-y border-white/10 py-5 text-sm">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-[#FBF3EA]/60">Дата и старт</dt>
-                    <dd className="font-mono-tech text-[#FBF3EA]">
-                      {formattedDate} · {formattedTime}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-[#FBF3EA]/60">Формат</dt>
-                    <dd className="text-[#FBF3EA]">{activeFormat.title}</dd>
-                  </div>
-                  {activeAddons.length > 0 && (
-                    <div className="flex justify-between gap-4">
-                      <dt className="text-[#FBF3EA]/60">Опции</dt>
-                      <dd className="text-right text-[#FBF3EA]">
-                        {activeAddons.map((a) => a.label).join(', ')}
-                      </dd>
-                    </div>
-                  )}
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-[#FBF3EA]/60">Бюджет</dt>
-                    <dd className="font-mono-tech font-medium text-[#FFB27C]">
-                      {formatRubles(totalPrice)}
-                    </dd>
-                  </div>
-                </dl>
+                <pre className="mt-5 whitespace-pre-wrap rounded-xl border border-white/10 bg-[#0B0A09]/90 p-4 font-mono-tech text-xs leading-relaxed text-[#FBF3EA]/85">
+                  {telegramMessage}
+                </pre>
 
                 <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <a
+                    href={telegramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-[#FFB27C] px-6 py-3 text-sm font-semibold text-[#110D0B] whitespace-nowrap transition-colors hover:bg-[#FBF3EA]"
+                  >
+                    <Send size={15} />
+                    <span>Отправить в Telegram @{TELEGRAM_HANDLE}</span>
+                  </a>
+
                   <button
                     type="button"
                     onClick={handleCopyBrief}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-medium text-[#FBF3EA] cursor-pointer transition-colors hover:border-[#FFB27C] hover:text-[#FFB27C]"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-medium text-[#FBF3EA] cursor-pointer transition-colors hover:border-[#FFB27C] hover:text-[#FFB27C]"
                   >
                     {copied ? <Check size={15} /> : <Copy size={15} />}
-                    {copied ? 'Скопировано' : 'Скопировать детали'}
+                    {copied ? 'Скопировано' : 'Скопировать текст'}
                   </button>
+
                   <button
                     type="button"
-                    onClick={() => setSubmittedCode(null)}
+                    onClick={() => setIsReadyToSend(false)}
                     className="inline-flex items-center rounded-full px-4 py-2.5 text-sm font-medium text-[#FBF3EA]/70 cursor-pointer hover:text-[#FBF3EA]"
                   >
-                    Изменить заявку
+                    Изменить данные
                   </button>
                 </div>
               </motion.div>
@@ -615,8 +726,4 @@ export function BookingSection({
       </div>
     </section>
   );
-}
-
-function activeAddonItemsSum(items: { price: number }[]): number {
-  return items.reduce((sum, item) => sum + item.price, 0);
 }

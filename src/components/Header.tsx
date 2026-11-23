@@ -8,7 +8,7 @@ interface HeaderProps {
 
 const NAV_LINKS = [
   { href: '#portfolio', label: 'Портфолио' },
-  { href: '#formats', label: 'Форматы' },
+  { href: '#formats', label: 'Цены' },
   { href: '#process', label: 'Процесс' },
   { href: '#reviews', label: 'Отзывы' },
 ];

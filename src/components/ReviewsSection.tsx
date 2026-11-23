@@ -88,7 +88,7 @@ export function ReviewsSection() {
         <div className="max-w-xl">
           <p className="text-sm font-medium text-[#FFB27C]">Отзывы</p>
           <h2 className="mt-2 font-display text-4xl sm:text-5xl font-medium tracking-tight text-[#FBF3EA]">
-            Впечатления после съёмки
+            Что пишут после съёмки
           </h2>
         </div>
 
@@ -169,7 +169,7 @@ export function ReviewsSection() {
                 rows={3}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Как прошла съёмка и какие кадры понравились больше всего?"
+                placeholder="Как прошла съёмка и понравились ли фотографии?"
                 className="mt-2 w-full rounded-xl border border-white/15 bg-[#0B0A09] px-4 py-3 text-sm text-[#FBF3EA] placeholder:text-[#FBF3EA]/35 focus:border-[#FFB27C] focus:outline-none"
               />
             </div>
@@ -203,10 +203,10 @@ export function ReviewsSection() {
       {reviews.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-white/15 bg-[#120F0D] p-8 sm:p-10 text-center">
           <p className="font-display text-2xl text-[#FBF3EA]/85">
-            Пока здесь нет ни одного отзыва
+            Пока здесь нет отзывов
           </p>
           <p className="mt-2 text-sm text-[#FBF3EA]/60">
-            Если вы уже были у меня на съёмке, поделитесь впечатлениями через кнопку выше.
+            Если мы уже снимали вместе, можете поделиться впечатлениями через кнопку выше.
           </p>
         </div>
       ) : (

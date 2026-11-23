@@ -5,53 +5,44 @@ import { PROCESS_STEPS } from '../data/studioData';
 
 export function ProcessSection() {
   const [activeIndex, setActiveIndex] = React.useState(0);
-  const [imgError, setImgError] = React.useState(false);
 
   return (
     <section
       id="process"
       className="mx-auto max-w-[1320px] px-4 py-20 sm:px-6 lg:px-8 lg:py-28"
     >
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 items-stretch">
-        {/* Left: Balanced visual studio frame */}
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 items-start">
+        {/* Left: Editorial headline & clear expectations (no backstage photo) */}
         <div className="lg:col-span-5">
-          <div className="relative h-full min-h-[360px] overflow-hidden rounded-2xl border border-white/10 bg-[#14100E]">
-            {!imgError ? (
-              <img
-                src="/src/assets/images/photo_studio_backstage_1795454912322.jpg"
-                alt="Атмосфера фотостудии exposure со средним форматом и тёплым светом"
-                referrerPolicy="no-referrer"
-                onError={() => setImgError(true)}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-[#18120F] p-8 text-center">
-                <p className="font-display text-2xl text-[#FBF3EA]/70">
-                  Студийное пространство · Москва
-                </p>
-              </div>
-            )}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
-            />
-            <div className="absolute inset-x-0 bottom-0 p-6">
-              <p className="text-xs text-[#FFB27C]">Процесс съёмки</p>
-              <p className="mt-1 font-display text-2xl text-[#FBF3EA]">
-                «Вам не нужно уметь позировать — достаточно прийти, остальное настроим вместе»
-              </p>
+          <p className="text-sm font-medium text-[#FFB27C]">Как проходит съёмка</p>
+          <h2 className="mt-2 font-display text-4xl sm:text-5xl font-medium tracking-tight text-[#FBF3EA]">
+            Всё просто и без лишней суеты
+          </h2>
+          <p className="mt-5 text-base leading-relaxed text-[#FBF3EA]/75">
+            Вам не нужно уметь позировать или придумывать сценарий самостоятельно. Мы заранее
+            выбираем время, место и одежду, а на самой встрече я подсказываю, как встать и куда
+            смотреть, чтобы кадры получились живыми.
+          </p>
+
+          <dl className="mt-8 grid grid-cols-2 gap-6 border-t border-white/10 pt-6">
+            <div>
+              <dt className="text-xs text-[#FBF3EA]/55">Подготовка</dt>
+              <dd className="mt-1 text-sm font-medium text-[#FBF3EA]">
+                Помогаю с локацией и одеждой
+              </dd>
             </div>
-          </div>
+            <div>
+              <dt className="text-xs text-[#FBF3EA]/55">Результат</dt>
+              <dd className="mt-1 text-sm font-medium text-[#FBF3EA]">
+                Облачная галерея за 4–14 дней
+              </dd>
+            </div>
+          </dl>
         </div>
 
-        {/* Right: 4 Editorial Steps */}
-        <div className="lg:col-span-7 flex flex-col justify-center">
-          <p className="text-sm font-medium text-[#FFB27C]">Как всё проходит</p>
-          <h2 className="mt-2 font-display text-4xl sm:text-5xl font-medium tracking-tight text-[#FBF3EA]">
-            Четыре спокойных шага до готовой серии
-          </h2>
-
-          <div className="mt-8 divide-y divide-white/10 border-y border-white/10">
+        {/* Right: 4 Interactive Steps */}
+        <div className="lg:col-span-7">
+          <div className="divide-y divide-white/10 border-y border-white/10">
             {PROCESS_STEPS.map((step, idx) => {
               const isOpen = activeIndex === idx;
               return (

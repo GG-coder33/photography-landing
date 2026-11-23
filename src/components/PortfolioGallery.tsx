@@ -8,11 +8,13 @@ interface PortfolioGalleryProps {
 }
 
 const CATEGORIES: { id: PhotoCategory; label: string }[] = [
-  { id: 'all', label: 'Все серии' },
-  { id: 'portrait', label: 'Портрет' },
-  { id: 'editorial', label: 'Editorial' },
+  { id: 'all', label: 'Все' },
+  { id: 'wedding', label: 'Свадьбы' },
+  { id: 'family', label: 'Семейные' },
+  { id: 'portrait', label: 'Портреты' },
   { id: 'lovestory', label: 'Для двоих' },
-  { id: 'film', label: 'Плёнка и студия' },
+  { id: 'reportage', label: 'Репортаж' },
+  { id: 'editorial', label: 'Бренды' },
 ];
 
 function TiltPhotoCard({
@@ -77,7 +79,7 @@ function TiltPhotoCard({
           </div>
         )}
 
-        {/* Interactive pointer specular sheen */}
+        {/* Interactive pointer sheen */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -86,10 +88,10 @@ function TiltPhotoCard({
           }}
         />
 
-        {/* Measured contrast scrim */}
+        {/* Scrim */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-100"
         />
 
         {/* Top-right expand cue */}
@@ -100,12 +102,10 @@ function TiltPhotoCard({
           <ArrowUpRight size={16} />
         </span>
 
-        {/* Unboxed editorial metadata & title (without camera/EXIF params) */}
+        {/* Metadata & title without camera/EXIF params */}
         <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-2 text-xs text-[#FBF3EA]/75">
             <span className="font-medium text-[#FFB27C]">{item.categoryLabel}</span>
-            <span aria-hidden="true">·</span>
-            <span>{item.year}</span>
             <span aria-hidden="true">·</span>
             <span>{item.location}</span>
           </div>
@@ -153,11 +153,11 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
 
   return (
     <section id="portfolio" className="mx-auto max-w-[1320px] px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-      <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-medium text-[#FFB27C]">Избранные серии</p>
+          <p className="text-sm font-medium text-[#FFB27C]">Портфолио</p>
           <h2 className="mt-2 font-display text-4xl sm:text-5xl font-medium tracking-tight text-[#FBF3EA] max-w-xl">
-            Кадры, где свет работает на характер
+            Примеры последних съёмок
           </h2>
         </div>
 
@@ -173,7 +173,7 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
             </button>
           )}
 
-          {/* Interactive filter tabs */}
+          {/* Filter tabs */}
           <div
             role="tablist"
             aria-label="Фильтр серий фотографий"
@@ -188,7 +188,7 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setFilter(cat.id)}
-                  className={`relative rounded-lg px-3.5 py-2 text-xs sm:text-sm font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-[#FFB27C] ${
+                  className={`relative rounded-lg px-3 py-2 text-xs sm:text-sm font-medium whitespace-nowrap shrink-0 cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-[#FFB27C] ${
                     active
                       ? 'bg-[#FBF3EA] text-[#110D0B]'
                       : 'text-[#FBF3EA]/70 hover:text-[#FBF3EA]'
@@ -202,14 +202,14 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
         </div>
       </div>
 
-      {/* Bento / Masonry Grid without popLayout locking */}
+      {/* Responsive Bento Grid */}
       <div key={filter} className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-12">
         {visibleItems.map((item) => (
           <TiltPhotoCard key={item.id} item={item} onSelect={setSelected} />
         ))}
       </div>
 
-      {/* Fullscreen Lightbox */}
+      {/* Lightbox */}
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -295,7 +295,7 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
                       }}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#FBF3EA] px-5 py-3 text-sm font-semibold text-[#110D0B] whitespace-nowrap cursor-pointer transition-colors hover:bg-[#FFB27C]"
                     >
-                      Хочу похожую съёмку
+                      Хочу такую съёмку
                       <ArrowUpRight size={16} />
                     </button>
                     <button

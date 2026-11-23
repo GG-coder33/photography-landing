@@ -45,18 +45,19 @@ export function FormatConfigurator({
     >
       <div className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
-          <p className="text-sm font-medium text-[#FFB27C]">Форматы и калькулятор съёмки</p>
+          <p className="text-sm font-medium text-[#FFB27C]">Услуги и стоимость</p>
           <h2 className="mt-2 font-display text-4xl sm:text-5xl font-medium tracking-tight text-[#FBF3EA]">
-            Соберите свою сессию под задачу
+            Форматы съёмок и средние цены
           </h2>
           <p className="mt-4 text-base leading-relaxed text-[#FBF3EA]/70">
-            Выберите базовый формат и добавьте плёнку, студию или стилиста — стоимость и сроки
-            пересчитываются сразу без скрытых доплат.
+            Актуальный прайс по средним ценам в Москве. Выберите нужный формат и при
+            необходимости отметьте студию, визажиста или дополнительный час — сумма
+            посчитается сразу.
           </p>
         </div>
 
-        {/* 3 Shoot Format Cards */}
-        <div className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* 6 Shoot Format Cards in 3-col balanced grid */}
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {SHOOT_FORMATS.map((fmt) => {
             const isSelected = fmt.id === activeFormat.id;
             return (
@@ -66,7 +67,7 @@ export function FormatConfigurator({
                 whileHover={{ y: -3 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 onClick={() => onSelectFormat(fmt.id)}
-                className={`flex flex-col justify-between rounded-2xl border p-6 sm:p-8 text-left cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-[#FFB27C] ${
+                className={`flex flex-col justify-between rounded-2xl border p-6 sm:p-7 text-left cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-[#FFB27C] ${
                   isSelected
                     ? 'border-[#FFB27C]/70 bg-[#1B1410]'
                     : 'border-white/10 bg-[#14100E] hover:border-white/25'
@@ -76,7 +77,7 @@ export function FormatConfigurator({
                   <div className="flex items-baseline justify-between gap-4">
                     <span className="font-mono-tech text-sm text-[#FFB27C]">{fmt.index}</span>
                     <span className="font-mono-tech text-xs text-[#FBF3EA]/60">
-                      {fmt.durationHours} ч · {fmt.framesCount} кадров
+                      {fmt.durationHours} ч · от {fmt.framesCount} фото
                     </span>
                   </div>
 
@@ -87,7 +88,7 @@ export function FormatConfigurator({
                     {fmt.subtitle}
                   </p>
 
-                  <ul className="mt-6 space-y-2.5 border-t border-white/[0.08] pt-5">
+                  <ul className="mt-5 space-y-2.5 border-t border-white/[0.08] pt-5">
                     {fmt.highlights.map((line) => (
                       <li
                         key={line}
@@ -104,17 +105,20 @@ export function FormatConfigurator({
                   </ul>
                 </div>
 
-                <div className="mt-8 flex items-center justify-between border-t border-white/[0.08] pt-5">
-                  <span className="font-mono-tech text-xl font-medium text-[#FBF3EA]">
-                    {formatRubles(fmt.price)}
-                  </span>
-                  <span
-                    className={`text-xs font-semibold uppercase tracking-wider ${
-                      isSelected ? 'text-[#FFB27C]' : 'text-[#FBF3EA]/55'
-                    }`}
-                  >
-                    {isSelected ? 'Выбрано' : 'Выбрать'}
-                  </span>
+                <div className="mt-7 border-t border-white/[0.08] pt-5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-mono-tech text-xl font-medium text-[#FBF3EA]">
+                      {formatRubles(fmt.price)}
+                    </span>
+                    <span
+                      className={`text-xs font-semibold uppercase tracking-wider ${
+                        isSelected ? 'text-[#FFB27C]' : 'text-[#FBF3EA]/55'
+                      }`}
+                    >
+                      {isSelected ? 'Выбрано' : 'Выбрать'}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-[#FBF3EA]/50">{fmt.priceNote}</p>
                 </div>
               </motion.button>
             );
@@ -125,7 +129,7 @@ export function FormatConfigurator({
         <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-12 items-stretch">
           <div className="lg:col-span-7 rounded-2xl border border-white/10 bg-[#14100E] p-6 sm:p-8">
             <h3 className="text-lg font-semibold text-[#FBF3EA]">
-              Дополнительные опции к съёмке
+              Что можно добавить к съёмке
             </h3>
             <div className="mt-5 divide-y divide-white/[0.08]">
               {SHOOT_ADDONS.map((addon) => {
@@ -169,34 +173,34 @@ export function FormatConfigurator({
           {/* Live Summary Panel */}
           <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border border-[#FFB27C]/30 bg-[#18120F] p-6 sm:p-8">
             <div>
-              <p className="text-xs font-medium text-[#FFB27C]">Итог вашей конфигурации</p>
+              <p className="text-xs font-medium text-[#FFB27C]">Предварительный расчёт</p>
               <h3 className="mt-2 font-display text-3xl font-medium text-[#FBF3EA]">
                 {activeFormat.title}
               </h3>
 
               <dl className="mt-6 space-y-3 border-y border-white/10 py-5 text-sm">
                 <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[#FBF3EA]/65">Время съёмки</dt>
+                  <dt className="text-[#FBF3EA]/65">Длительность</dt>
                   <dd className="font-mono-tech text-[#FBF3EA]">{activeFormat.durationHours} ч</dd>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[#FBF3EA]/65">Готовых фотографий</dt>
-                  <dd className="font-mono-tech text-[#FBF3EA]">{totalFrames} кадров</dd>
+                  <dt className="text-[#FBF3EA]/65">Готовых фото</dt>
+                  <dd className="font-mono-tech text-[#FBF3EA]">от {totalFrames} шт.</dd>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[#FBF3EA]/65">Срок готовности</dt>
+                  <dt className="text-[#FBF3EA]/65">Срок отдачи</dt>
                   <dd className="font-mono-tech text-[#FBF3EA]">до {fastestDelivery} дней</dd>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[#FBF3EA]/65">Опции</dt>
+                  <dt className="text-[#FBF3EA]/65">Дополнительно</dt>
                   <dd className="font-mono-tech text-[#FBF3EA]">
-                    {activeAddonItems.length ? `${activeAddonItems.length} добавлено` : 'Базовый пакет'}
+                    {activeAddonItems.length ? `выбрано: ${activeAddonItems.length}` : 'без доп. опций'}
                   </dd>
                 </div>
               </dl>
 
               <div className="mt-6 flex items-baseline justify-between gap-4">
-                <span className="text-sm text-[#FBF3EA]/70">Итоговая стоимость</span>
+                <span className="text-sm text-[#FBF3EA]/70">Ориентировочно</span>
                 <span className="font-mono-tech text-3xl font-medium text-[#FBF3EA]">
                   {formatRubles(totalPrice)}
                 </span>
@@ -208,7 +212,7 @@ export function FormatConfigurator({
               onClick={onProceedToBooking}
               className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#FBF3EA] px-6 py-3.5 text-sm font-semibold text-[#110D0B] whitespace-nowrap cursor-pointer transition-colors duration-200 hover:bg-[#FFB27C] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#FFB27C]"
             >
-              Зафиксировать и выбрать дату
+              Перейти к выбору даты
               <ArrowRight size={16} />
             </button>
           </div>

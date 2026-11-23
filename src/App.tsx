@@ -8,9 +8,11 @@ import HalftoneFlowHero, {
   type HalftonePaletteName,
 } from '@/components/ui/halftone-flow-hero';
 import { Header } from './components/Header';
+import { GlobalHalftoneBackdrop } from './components/GlobalHalftoneBackdrop';
 import { PortfolioGallery } from './components/PortfolioGallery';
 import { FormatConfigurator } from './components/FormatConfigurator';
 import { ProcessSection } from './components/ProcessSection';
+import { ReviewsSection } from './components/ReviewsSection';
 import { BookingSection } from './components/BookingSection';
 import { type PortfolioItem } from './data/studioData';
 
@@ -68,23 +70,28 @@ export default function App() {
   };
 
   return (
-    <div id="top" className="min-h-screen bg-[#0B0A09] text-[#FBF3EA]">
-      <Header onBookClick={scrollToBooking} />
+    <div id="top" className="relative min-h-screen bg-[#0B0A09] text-[#FBF3EA]">
+      {/* Full-landing interactive WebGL halftone shader */}
+      <GlobalHalftoneBackdrop palette={palette} dotSize={dotSize} />
 
-      <main>
-        {/* Interactive WebGL Halftone Flow Hero */}
-        <HalftoneFlowHero
-          badge="Портреты · Editorial · 35mm плёнка"
-          title={'Свет, характер\nи *живой кадр*'}
-          description="Авторские фотосессии в Москве и на выезде. Подвигайте курсором по растровой волне и напишите в строку ниже, какую съёмку вы задумали."
-          prompts={HERO_PROMPTS}
-          ctaLabel="Обсудить съёмку"
-          onSubmit={handleHeroSubmit}
-          proof="Москва и выезд · Цифра, средний формат и 35mm плёнка"
-          avatars={[]}
-          palette={palette}
-          dotSize={dotSize}
-          height="max(640px, calc(100svh - 64px))"
+      <div className="relative z-10">
+        <Header onBookClick={scrollToBooking} />
+
+        <main>
+          {/* Interactive WebGL Halftone Flow Hero sharing the full-landing shader */}
+          <HalftoneFlowHero
+            transparentStage
+            badge="Портреты · Editorial · 35mm плёнка"
+            title={'Свет, характер\nи *живой кадр*'}
+            description="Авторские фотосессии в Москве и на выезде. Подвигайте курсором по растровой волне и напишите в строку ниже, какую съёмку вы задумали."
+            prompts={HERO_PROMPTS}
+            ctaLabel="Обсудить съёмку"
+            onSubmit={handleHeroSubmit}
+            proof="Москва и выезд · Цифра, средний формат и 35mm плёнка"
+            avatars={[]}
+            palette={palette}
+            dotSize={dotSize}
+            height="max(640px, calc(100svh - 64px))"
           footerSlot={
             <div className="flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-white/15 bg-[#0B0A09]/75 px-4 py-2 text-xs text-[#FBF3EA]/80 backdrop-blur-md">
               <div className="flex items-center gap-1.5">
@@ -138,73 +145,86 @@ export default function App() {
           }
         />
 
-        {/* Animated Marquee Ribbon Divider */}
-        <div
-          aria-hidden="true"
-          className="overflow-hidden border-y border-white/[0.07] bg-[#100D0B] py-3.5"
-        >
-          <div className="animate-marquee font-display text-lg italic tracking-wide text-[#FBF3EA]/55">
-            {Array.from({ length: 6 }).map((_, idx) => (
-              <span key={idx} className="mx-6 whitespace-nowrap">
-                избранные серии · портрет · editorial · 35mm плёнка · живой свет · студия и выезд
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Portfolio Bento Grid + 3D Tilt Cards + Lightbox */}
-        <PortfolioGallery onRequestSimilar={handleRequestSimilar} />
-
-        {/* Interactive Shoot Format & Add-ons Configurator */}
-        <FormatConfigurator
-          selectedFormatId={selectedFormatId}
-          onSelectFormat={setSelectedFormatId}
-          selectedAddons={selectedAddons}
-          onToggleAddon={handleToggleAddon}
-          onProceedToBooking={scrollToBooking}
-        />
-
-        {/* Editorial 4-Step Process & Studio Split */}
-        <ProcessSection />
-
-        {/* Interactive Session Booking */}
-        <BookingSection
-          selectedFormatId={selectedFormatId}
-          onSelectFormat={setSelectedFormatId}
-          selectedAddons={selectedAddons}
-          briefText={briefText}
-          onChangeBrief={setBriefText}
-        />
-      </main>
-
-      {/* Quiet Editorial Footer */}
-      <footer className="border-t border-white/[0.07] bg-[#0B0A09] py-10">
-        <div className="mx-auto flex max-w-[1320px] flex-col gap-6 px-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
-          <div>
-            <span className="font-display text-2xl font-medium text-[#FBF3EA]">Воронцов</span>
-            <p className="mt-1 text-xs text-[#FBF3EA]/55">
-              Москва · Санкт-Петербург · Выезд по всему миру
-            </p>
+          {/* Animated Marquee Ribbon Divider */}
+          <div
+            aria-hidden="true"
+            className="overflow-hidden border-y border-white/[0.08] bg-[#0B0A09]/70 backdrop-blur-[2px] py-3.5"
+          >
+            <div className="animate-marquee font-display text-lg italic tracking-wide text-[#FBF3EA]/65">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <span key={idx} className="mx-6 whitespace-nowrap">
+                  избранные серии · портрет · editorial · 35mm плёнка · живой свет · студия и выезд
+                </span>
+              ))}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 text-sm text-[#FBF3EA]/70">
-            <a href="#portfolio" className="hover:text-[#FBF3EA] whitespace-nowrap">
-              Портфолио
-            </a>
-            <a href="#formats" className="hover:text-[#FBF3EA] whitespace-nowrap">
-              Форматы
-            </a>
-            <a href="#process" className="hover:text-[#FBF3EA] whitespace-nowrap">
-              Процесс
-            </a>
-            <a href="mailto:hello@vorontsov.photo" className="hover:text-[#FFB27C] whitespace-nowrap">
-              hello@vorontsov.photo
-            </a>
+          {/* Portfolio Bento Grid + 3D Tilt Cards + Lightbox */}
+          <div className="bg-[#0B0A09]/58 backdrop-blur-[1px]">
+            <PortfolioGallery onRequestSimilar={handleRequestSimilar} />
           </div>
 
-          <p className="text-xs text-[#FBF3EA]/45">© 2026 Артём Воронцов</p>
-        </div>
-      </footer>
+          {/* Interactive Shoot Format & Add-ons Configurator */}
+          <FormatConfigurator
+            selectedFormatId={selectedFormatId}
+            onSelectFormat={setSelectedFormatId}
+            selectedAddons={selectedAddons}
+            onToggleAddon={handleToggleAddon}
+            onProceedToBooking={scrollToBooking}
+          />
+
+          {/* Editorial 4-Step Process & Studio Split */}
+          <div className="bg-[#0B0A09]/58 backdrop-blur-[1px]">
+            <ProcessSection />
+          </div>
+
+          {/* Empty-by-default Reviews Tab with "Добавить отзыв" */}
+          <div className="bg-[#0B0A09]/65 backdrop-blur-[2px]">
+            <ReviewsSection />
+          </div>
+
+          {/* Interactive Session Booking */}
+          <BookingSection
+            selectedFormatId={selectedFormatId}
+            onSelectFormat={setSelectedFormatId}
+            selectedAddons={selectedAddons}
+            briefText={briefText}
+            onChangeBrief={setBriefText}
+          />
+        </main>
+
+        {/* Quiet Editorial Footer */}
+        <footer className="border-t border-white/[0.08] bg-[#0B0A09]/85 backdrop-blur-md py-10">
+          <div className="mx-auto flex max-w-[1320px] flex-col gap-6 px-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+            <div>
+              <span className="font-display text-2xl font-medium text-[#FBF3EA]">exposure</span>
+              <p className="mt-1 text-xs text-[#FBF3EA]/55">
+                Москва · Санкт-Петербург · Выезд по всему миру
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-6 text-sm text-[#FBF3EA]/70">
+              <a href="#portfolio" className="hover:text-[#FBF3EA] whitespace-nowrap">
+                Портфолио
+              </a>
+              <a href="#formats" className="hover:text-[#FBF3EA] whitespace-nowrap">
+                Форматы
+              </a>
+              <a href="#process" className="hover:text-[#FBF3EA] whitespace-nowrap">
+                Процесс
+              </a>
+              <a href="#reviews" className="hover:text-[#FBF3EA] whitespace-nowrap">
+                Отзывы
+              </a>
+              <a href="mailto:hello@exposure.photo" className="hover:text-[#FFB27C] whitespace-nowrap">
+                hello@exposure.photo
+              </a>
+            </div>
+
+            <p className="text-xs text-[#FBF3EA]/45">© 2026 exposure</p>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

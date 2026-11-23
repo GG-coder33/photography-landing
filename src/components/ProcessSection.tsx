@@ -19,7 +19,7 @@ export function ProcessSection() {
             {!imgError ? (
               <img
                 src="/src/assets/images/photo_studio_backstage_1795454912322.jpg"
-                alt="Атмосфера фотостудии Артёма Воронцова со средним форматом и тёплым светом"
+                alt="Атмосфера фотостудии exposure со средним форматом и тёплым светом"
                 referrerPolicy="no-referrer"
                 onError={() => setImgError(true)}
                 className="h-full w-full object-cover"

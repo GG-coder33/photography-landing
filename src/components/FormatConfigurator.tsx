@@ -41,7 +41,7 @@ export function FormatConfigurator({
   return (
     <section
       id="formats"
-      className="border-t border-white/[0.07] bg-[#100D0B] py-20 lg:py-28"
+      className="border-t border-white/[0.08] bg-[#0E0B0A]/72 backdrop-blur-[2px] py-20 lg:py-28"
     >
       <div className="mx-auto max-w-[1320px] px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl">

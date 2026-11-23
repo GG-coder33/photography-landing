@@ -46,6 +46,8 @@ export type HalftoneFlowHeroProps = {
   className?: string
   /** Optional extra interactive toolbar rendered cleanly at the bottom of the card. */
   footerSlot?: React.ReactNode
+  /** When true, skips local WebGL canvas so a shared full-page shader backdrop shows through seamlessly. */
+  transparentStage?: boolean
 }
 
 // #region helpers
@@ -116,10 +118,11 @@ const FRAG =
   "gl_FragColor=vec4(col,1.);}"
 
 const CSS =
-  ".hfh-root{position:relative;width:100%;padding:12px;background:var(--color-background,#0b0a09);font-family:var(--font-sans-body,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif)}" +
+  ".hfh-root{position:relative;width:100%;padding:12px;background:transparent;font-family:var(--font-sans-body,ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif)}" +
   ".hfh-root *{box-sizing:border-box}" +
   ".hfh-card{position:relative;width:100%;height:100%;overflow:hidden;isolation:isolate;border-radius:28px;background:var(--hfh-ground);color:var(--hfh-text);" +
   "box-shadow:0 40px 80px -40px rgba(0,0,0,.65),inset 0 0 0 1px rgba(255,255,255,.08);transform:scale(.965);opacity:0;transition:transform 1.4s cubic-bezier(.16,1,.3,1),opacity .8s ease}" +
+  ".hfh-card-clear{background:transparent}" +
   ".hfh-in .hfh-card{transform:none;opacity:1}" +
   ".hfh-host{position:absolute;inset:0}" +
   ".hfh-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}" +
@@ -194,6 +197,7 @@ export default function HalftoneFlowHero({
   height = "100svh",
   className,
   footerSlot,
+  transparentStage = false,
 }: HalftoneFlowHeroProps) {
   const root = React.useRef<HTMLElement | null>(null)
   const host = React.useRef<HTMLDivElement | null>(null)
@@ -231,6 +235,10 @@ export default function HalftoneFlowHero({
   }, [prompts])
 
   React.useEffect(() => {
+    if (transparentStage) {
+      setReady(true)
+      return
+    }
     const el = root.current
     const holder = host.current
     if (!el || !holder) return
@@ -405,9 +413,9 @@ export default function HalftoneFlowHero({
       }
     >
       <style>{CSS}</style>
-      <div className="hfh-card">
-        {failed ? <div className="hfh-fallback" aria-hidden="true" /> : null}
-        <div ref={host} className="hfh-host" aria-hidden="true" />
+      <div className={"hfh-card" + (transparentStage ? " hfh-card-clear" : "")}>
+        {failed && !transparentStage ? <div className="hfh-fallback" aria-hidden="true" /> : null}
+        {!transparentStage ? <div ref={host} className="hfh-host" aria-hidden="true" /> : null}
         <div className="hfh-scrim" aria-hidden="true" />
         <div className="hfh-inner">
           {badge ? (

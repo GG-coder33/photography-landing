@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { href: '#portfolio', label: 'Портфолио' },
   { href: '#formats', label: 'Форматы' },
   { href: '#process', label: 'Процесс' },
-  { href: '#booking', label: 'Контакты' },
+  { href: '#reviews', label: 'Отзывы' },
 ];
 
 export function Header({ onBookClick }: HeaderProps) {
@@ -24,7 +24,7 @@ export function Header({ onBookClick }: HeaderProps) {
           href="#top"
           className="font-display text-2xl font-medium tracking-tight text-[#FBF3EA] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFB27C]"
         >
-          Воронцов
+          exposure
         </a>
 
         {/* Zone 2: 4 concise single-line nav links */}

@@ -34,7 +34,6 @@ export default function App() {
   const [palette, setPalette] = React.useState<HalftonePaletteName>('ember');
   const [dotSize, setDotSize] = React.useState<number>(7);
   const [selectedFormatId, setSelectedFormatId] = React.useState<string>('wedding');
-  const [selectedAddons, setSelectedAddons] = React.useState<string[]>([]);
   const [briefText, setBriefText] = React.useState<string>('');
 
   const scrollToBooking = React.useCallback(() => {
@@ -63,12 +62,6 @@ export default function App() {
     setSelectedFormatId(item.suggestedFormatId);
     setBriefText(item.suggestedPrompt);
     scrollToBooking();
-  };
-
-  const handleToggleAddon = (id: string) => {
-    setSelectedAddons((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
   };
 
   return (
@@ -170,8 +163,6 @@ export default function App() {
           <FormatConfigurator
             selectedFormatId={selectedFormatId}
             onSelectFormat={setSelectedFormatId}
-            selectedAddons={selectedAddons}
-            onToggleAddon={handleToggleAddon}
             onProceedToBooking={scrollToBooking}
           />
 
@@ -189,7 +180,6 @@ export default function App() {
           <BookingSection
             selectedFormatId={selectedFormatId}
             onSelectFormat={setSelectedFormatId}
-            selectedAddons={selectedAddons}
             briefText={briefText}
             onChangeBrief={setBriefText}
           />

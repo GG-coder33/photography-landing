@@ -8,14 +8,14 @@ export type PhotoCategory =
 
 export interface PortfolioItem {
   id: string;
+  index: string;
   title: string;
   category: Exclude<PhotoCategory, 'all'>;
   categoryLabel: string;
   subtitle: string;
-  image: string;
-  aspectClass: string;
   gridSpanClass: string;
   story: string;
+  scenarios: string[];
   suggestedFormatId: string;
   suggestedPrompt: string;
 }
@@ -33,15 +33,6 @@ export interface ShootFormat {
   highlights: string[];
 }
 
-export interface ShootAddon {
-  id: string;
-  label: string;
-  note: string;
-  price: number;
-  extraFrames?: number;
-  overrideDeliveryDays?: number;
-}
-
 export interface ProcessStep {
   number: string;
   title: string;
@@ -52,71 +43,96 @@ export interface ProcessStep {
 export const PORTFOLIO_ITEMS: PortfolioItem[] = [
   {
     id: 'service-wedding',
+    index: '01.',
     title: 'Свадьба',
     category: 'wedding',
     categoryLabel: 'Свадьба',
     subtitle: 'ЗАГС, прогулка вдвоём и банкет',
-    image: '/src/assets/images/photo_wedding_ceremony_1795458279108.jpg',
-    aspectClass: 'aspect-[4/3]',
-    gridSpanClass: 'md:col-span-7',
+    gridSpanClass: 'md:col-span-6 lg:col-span-7',
     story:
       'Снимаю регистрацию в ЗАГСе, выездную церемонию, прогулку пары и банкет. Можно заказать съёмку на пару часов, полдня или на весь свадебный день.',
+    scenarios: [
+      'Сборы пары и утро перед церемонией',
+      'Регистрация в ЗАГСе или выездная роспись',
+      'Прогулка вдвоём и общие кадры с гостями',
+      'Банкет, тосты и первый танец',
+    ],
     suggestedFormatId: 'wedding',
     suggestedPrompt: 'Нужен фотограф на свадьбу',
   },
   {
     id: 'service-portrait',
+    index: '02.',
     title: 'Портретная съёмка',
     category: 'portrait',
     categoryLabel: 'Портретная съёмка',
     subtitle: 'Студия, улица или интерьер',
-    image: '/src/assets/images/photo_portrait_dramatic_1795454909873.jpg',
-    aspectClass: 'aspect-[3/4]',
-    gridSpanClass: 'md:col-span-5',
+    gridSpanClass: 'md:col-span-6 lg:col-span-5',
     story:
       'Индивидуальная съёмка для себя, соцсетей или работы. Подсказываю с выбором студии, одежды и тем, как естественно держаться перед камерой.',
+    scenarios: [
+      'Студийные портреты с разным светом',
+      'Прогулочные кадры на улицах города',
+      'Деловые и рабочие портреты для профиля',
+      'Камерная съёмка в квартире или кафе',
+    ],
     suggestedFormatId: 'portrait',
     suggestedPrompt: 'Хочу записаться на портретную съёмку',
   },
   {
     id: 'service-reportage',
+    index: '03.',
     title: 'Репортаж',
     category: 'reportage',
     categoryLabel: 'Репортаж',
     subtitle: 'Дни рождения, праздники и события',
-    image: '/src/assets/images/photo_event_reportage_1795458279685.jpg',
-    aspectClass: 'aspect-[3/4]',
-    gridSpanClass: 'md:col-span-5',
+    gridSpanClass: 'md:col-span-6 lg:col-span-5',
     story:
       'Съёмка праздников, юбилеев, корпоративов и любых других событий. Ловлю живые эмоции гостей, общие планы и важные моменты вечера.',
+    scenarios: [
+      'Дни рождения, юбилеи и семейные ужины',
+      'Конференции, лекции и презентации',
+      'Корпоративы и закрытые вечеринки',
+      'Выставки, концерты и открытия площадок',
+    ],
     suggestedFormatId: 'reportage',
     suggestedPrompt: 'Нужна репортажная съёмка мероприятия',
   },
   {
     id: 'service-family',
+    index: '04.',
     title: 'Семейная фотосессия',
     category: 'family',
     categoryLabel: 'Семейная фотосессия',
     subtitle: 'Дома, в парке или в фотостудии',
-    image: '/src/assets/images/photo_family_warmth_1795458279734.jpg',
-    aspectClass: 'aspect-[4/3]',
-    gridSpanClass: 'md:col-span-7',
+    gridSpanClass: 'md:col-span-6 lg:col-span-7',
     story:
       'Спокойная съёмка с детьми, родителями и близкими без заученных поз. Выбираем удобное время под режим детей и комфортную для всей семьи локацию.',
+    scenarios: [
+      'Живая прогулка в парке всей семьёй',
+      'Домашняя тёплая съёмка в привычной обстановке',
+      'Светлая фотостудия с минимумом реквизита',
+      'Памятные портреты нескольких поколений',
+    ],
     suggestedFormatId: 'family',
     suggestedPrompt: 'Хотим семейную фотосессию',
   },
   {
     id: 'service-lovestory',
+    index: '05.',
     title: 'Love story для двоих',
     category: 'lovestory',
     categoryLabel: 'Love story для двоих',
     subtitle: 'Прогулка по городу или на природе',
-    image: '/src/assets/images/photo_lovestory_golden_1795454912152.jpg',
-    aspectClass: 'aspect-[16/9]',
     gridSpanClass: 'md:col-span-12',
     story:
       'Парная съёмка на улице, на природе или в уютной студии. Отличный вариант для памятной даты, подготовки к свадьбе или просто хорошего дня вдвоём.',
+    scenarios: [
+      'Закатная прогулка за городом или у воды',
+      'Утренний маршрут по центру без толп людей',
+      'Предсвадебная съёмка для знакомства с камерой',
+      'Уютная парная серия дома или в кофейне',
+    ],
     suggestedFormatId: 'lovestory',
     suggestedPrompt: 'Интересует съёмка Love story для двоих',
   },
@@ -203,35 +219,6 @@ export const SHOOT_FORMATS: ShootFormat[] = [
       'Комфортная съёмка без натянутых постановочных поз',
       'От 70 готовых фото + первые кадры на следующий день',
     ],
-  },
-];
-
-export const SHOOT_ADDONS: ShootAddon[] = [
-  {
-    id: 'extra-hour',
-    label: 'Дополнительный час съёмки',
-    note: 'Если хочется спокойно сменить несколько образов или локаций',
-    price: 8000,
-    extraFrames: 40,
-  },
-  {
-    id: 'studio-rent',
-    label: 'Аренда фотостудии',
-    note: 'Средняя стоимость светлого зала в Москве на 1–1,5 часа',
-    price: 3500,
-  },
-  {
-    id: 'mua-stylist',
-    label: 'Макияж и укладка',
-    note: 'Работа визажиста перед съёмкой',
-    price: 6000,
-  },
-  {
-    id: 'express-48h',
-    label: 'Готовые фото за 48 часов',
-    note: 'Ускоренный отбор и обработка всей серии',
-    price: 5000,
-    overrideDeliveryDays: 2,
   },
 ];
 

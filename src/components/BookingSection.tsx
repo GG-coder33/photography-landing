@@ -11,13 +11,12 @@ import {
   Sun,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { SHOOT_ADDONS, SHOOT_FORMATS } from '../data/studioData';
+import { SHOOT_FORMATS } from '../data/studioData';
 import { formatRubles } from './FormatConfigurator';
 
 interface BookingSectionProps {
   selectedFormatId: string;
   onSelectFormat: (id: string) => void;
-  selectedAddons: string[];
   briefText: string;
   onChangeBrief: (val: string) => void;
 }
@@ -85,7 +84,6 @@ function nextShortestAngle(prevAngle: number, targetMod360: number): number {
 export function BookingSection({
   selectedFormatId,
   onSelectFormat,
-  selectedAddons,
   briefText,
   onChangeBrief,
 }: BookingSectionProps) {
@@ -220,9 +218,7 @@ export function BookingSection({
   const activeMonth = CALENDAR_MONTHS[monthCursor];
   const activeFormat =
     SHOOT_FORMATS.find((f) => f.id === selectedFormatId) || SHOOT_FORMATS[0];
-  const activeAddons = SHOOT_ADDONS.filter((a) => selectedAddons.includes(a.id));
-  const totalPrice =
-    activeFormat.price + activeAddons.reduce((sum, item) => sum + item.price, 0);
+  const totalPrice = activeFormat.price;
 
   const formattedDate = `${selectedDay.day} ${MONTH_GENITIVE[selectedDay.monthIndex]} ${selectedDay.year}`;
   const formattedTime = `${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`;
@@ -240,10 +236,7 @@ export function BookingSection({
       '',
       `Услуга: ${activeFormat.title}`,
       `Дата и время: ${formattedDate}, ${formattedTime}`,
-      activeAddons.length
-        ? `Доп. опции: ${activeAddons.map((a) => a.label).join(', ')}`
-        : 'Доп. опции: базовый пакет',
-      `Ориентировочная стоимость: ${formatRubles(totalPrice)}`,
+      `Стоимость: ${formatRubles(totalPrice)}`,
       '',
       `Имя: ${name.trim()}`,
       `Контакт: ${contact.trim() || email.trim()}`,
@@ -854,8 +847,4 @@ export function BookingSection({
       </div>
     </section>
   );
-}
-
-function activeAddonItemsSum(items: { price: number }[]): number {
-  return items.reduce((sum, item) => sum + item.price, 0);
 }

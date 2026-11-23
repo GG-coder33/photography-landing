@@ -1,13 +1,11 @@
 import React from 'react';
 import { Check, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
-import { SHOOT_ADDONS, SHOOT_FORMATS } from '../data/studioData';
+import { SHOOT_FORMATS } from '../data/studioData';
 
 interface FormatConfiguratorProps {
   selectedFormatId: string;
   onSelectFormat: (id: string) => void;
-  selectedAddons: string[];
-  onToggleAddon: (id: string) => void;
   onProceedToBooking: () => void;
 }
 
@@ -18,25 +16,10 @@ export function formatRubles(amount: number): string {
 export function FormatConfigurator({
   selectedFormatId,
   onSelectFormat,
-  selectedAddons,
-  onToggleAddon,
   onProceedToBooking,
 }: FormatConfiguratorProps) {
   const activeFormat =
     SHOOT_FORMATS.find((f) => f.id === selectedFormatId) || SHOOT_FORMATS[0];
-
-  const activeAddonItems = SHOOT_ADDONS.filter((a) => selectedAddons.includes(a.id));
-
-  const totalPrice =
-    activeFormat.price + activeAddonItems.reduce((sum, item) => sum + item.price, 0);
-  const totalFrames =
-    activeFormat.framesCount +
-    activeAddonItems.reduce((sum, item) => sum + (item.extraFrames || 0), 0);
-  const fastestDelivery = activeAddonItems.reduce(
-    (days, item) =>
-      item.overrideDeliveryDays ? Math.min(days, item.overrideDeliveryDays) : days,
-    activeFormat.deliveryDays
-  );
 
   return (
     <section
@@ -50,9 +33,8 @@ export function FormatConfigurator({
             Форматы съёмок и средние цены
           </h2>
           <p className="mt-4 text-base leading-relaxed text-[#FBF3EA]/70">
-            Актуальный прайс по средним ценам в Москве. Выберите нужный формат и при
-            необходимости отметьте студию, визажиста или дополнительный час — сумма
-            посчитается сразу.
+            Актуальный прайс по средним ценам в Москве. Выберите нужную услугу, чтобы
+            перейти к записи на удобную дату и время.
           </p>
         </div>
 
@@ -131,92 +113,48 @@ export function FormatConfigurator({
           })}
         </div>
 
-        {/* Add-ons + Live Summary Split */}
-        <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-12 items-stretch">
-          <div className="lg:col-span-7 rounded-2xl border border-white/10 bg-[#14100E] p-6 sm:p-8">
-            <h3 className="text-lg font-semibold text-[#FBF3EA]">
-              Что можно добавить к съёмке
+        {/* Selected Service Summary Bar */}
+        <div className="mt-8 flex flex-col gap-6 rounded-2xl border border-[#FFB27C]/30 bg-[#18120F] p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-medium text-[#FFB27C]">Выбранная услуга</p>
+            <h3 className="mt-1 font-display text-3xl font-medium text-[#FBF3EA]">
+              {activeFormat.title}
             </h3>
-            <div className="mt-5 divide-y divide-white/[0.08]">
-              {SHOOT_ADDONS.map((addon) => {
-                const checked = selectedAddons.includes(addon.id);
-                return (
-                  <button
-                    key={addon.id}
-                    type="button"
-                    role="checkbox"
-                    aria-checked={checked}
-                    onClick={() => onToggleAddon(addon.id)}
-                    className="flex w-full items-start justify-between gap-4 py-4 first:pt-0 last:pb-0 text-left cursor-pointer group focus-visible:outline-2 focus-visible:outline-[#FFB27C]"
-                  >
-                    <div className="flex items-start gap-3.5">
-                      <span
-                        aria-hidden="true"
-                        className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                          checked
-                            ? 'border-[#FFB27C] bg-[#FFB27C] text-[#110D0B]'
-                            : 'border-white/25 bg-transparent group-hover:border-white/50'
-                        }`}
-                      >
-                        {checked && <Check size={13} strokeWidth={2.5} />}
-                      </span>
-                      <div>
-                        <p className="text-sm font-medium text-[#FBF3EA]">{addon.label}</p>
-                        <p className="mt-1 text-xs leading-relaxed text-[#FBF3EA]/60">
-                          {addon.note}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="font-mono-tech text-sm text-[#FFB27C] whitespace-nowrap shrink-0">
-                      +{formatRubles(addon.price)}
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[#FBF3EA]/70">
+              <span>
+                Длительность:{' '}
+                <strong className="font-mono-tech font-normal text-[#FBF3EA]">
+                  {activeFormat.durationHours} ч
+                </strong>
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>
+                Готовых фото:{' '}
+                <strong className="font-mono-tech font-normal text-[#FBF3EA]">
+                  от {activeFormat.framesCount} шт.
+                </strong>
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>
+                Срок отдачи:{' '}
+                <strong className="font-mono-tech font-normal text-[#FBF3EA]">
+                  до {activeFormat.deliveryDays} дней
+                </strong>
+              </span>
             </div>
           </div>
 
-          {/* Live Summary Panel */}
-          <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border border-[#FFB27C]/30 bg-[#18120F] p-6 sm:p-8">
-            <div>
-              <p className="text-xs font-medium text-[#FFB27C]">Предварительный расчёт</p>
-              <h3 className="mt-2 font-display text-3xl font-medium text-[#FBF3EA]">
-                {activeFormat.title}
-              </h3>
-
-              <dl className="mt-6 space-y-3 border-y border-white/10 py-5 text-sm">
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[#FBF3EA]/65">Длительность</dt>
-                  <dd className="font-mono-tech text-[#FBF3EA]">{activeFormat.durationHours} ч</dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[#FBF3EA]/65">Готовых фото</dt>
-                  <dd className="font-mono-tech text-[#FBF3EA]">от {totalFrames} шт.</dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[#FBF3EA]/65">Срок отдачи</dt>
-                  <dd className="font-mono-tech text-[#FBF3EA]">до {fastestDelivery} дней</dd>
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-[#FBF3EA]/65">Дополнительно</dt>
-                  <dd className="font-mono-tech text-[#FBF3EA]">
-                    {activeAddonItems.length ? `выбрано: ${activeAddonItems.length}` : 'без доп. опций'}
-                  </dd>
-                </div>
-              </dl>
-
-              <div className="mt-6 flex items-baseline justify-between gap-4">
-                <span className="text-sm text-[#FBF3EA]/70">Ориентировочно</span>
-                <span className="font-mono-tech text-3xl font-medium text-[#FBF3EA]">
-                  {formatRubles(totalPrice)}
-                </span>
-              </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center lg:shrink-0">
+            <div className="sm:text-right">
+              <p className="text-xs text-[#FBF3EA]/60">Стоимость</p>
+              <p className="font-mono-tech text-2xl sm:text-3xl font-medium text-[#FBF3EA]">
+                {formatRubles(activeFormat.price)}
+              </p>
             </div>
-
             <button
               type="button"
               onClick={onProceedToBooking}
-              className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#FBF3EA] px-6 py-3.5 text-sm font-semibold text-[#110D0B] whitespace-nowrap cursor-pointer transition-colors duration-200 hover:bg-[#FFB27C] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#FFB27C]"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#FBF3EA] px-6 py-3.5 text-sm font-semibold text-[#110D0B] whitespace-nowrap shrink-0 cursor-pointer transition-colors duration-200 hover:bg-[#FFB27C] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-[#FFB27C]"
             >
               Перейти к выбору даты
               <ArrowRight size={16} />

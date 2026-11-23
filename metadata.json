@@ -2,5 +2,7 @@
   "name": "Воронцов — Фотография и свет",
   "description": "Интерактивное портфолио фотографа Артёма Воронцова: портретные, editorial и камерные съёмки с онлайн-записью.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

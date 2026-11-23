@@ -17,10 +17,11 @@ import { BookingSection } from './components/BookingSection';
 import { type PortfolioItem } from './data/studioData';
 
 const HERO_PROMPTS = [
-  'Нужен фотограф на свадьбу в ЗАГС и на прогулку…',
-  'Хотим семейную фотосессию в парке или дома…',
-  'Нужны свежие портреты для себя или работы…',
-  'Ищу репортажного фотографа на мероприятие…',
+  'Нужен фотограф на свадьбу…',
+  'Хочу записаться на портретную съёмку…',
+  'Нужна семейная фотосессия…',
+  'Ищу фотографа на репортаж…',
+  'Хотим съёмку Love story для двоих…',
 ];
 
 const SHADER_PALETTES: { id: HalftonePaletteName; label: string; dot: string }[] = [
@@ -32,7 +33,7 @@ const SHADER_PALETTES: { id: HalftonePaletteName; label: string; dot: string }[]
 export default function App() {
   const [palette, setPalette] = React.useState<HalftonePaletteName>('ember');
   const [dotSize, setDotSize] = React.useState<number>(7);
-  const [selectedFormatId, setSelectedFormatId] = React.useState<string>('portrait');
+  const [selectedFormatId, setSelectedFormatId] = React.useState<string>('wedding');
   const [selectedAddons, setSelectedAddons] = React.useState<string[]>([]);
   const [briefText, setBriefText] = React.useState<string>('');
 
@@ -48,12 +49,10 @@ export default function App() {
       setSelectedFormatId('wedding');
     } else if (lower.includes('сем') || lower.includes('дет')) {
       setSelectedFormatId('family');
-    } else if (lower.includes('репортаж') || lower.includes('меропри') || lower.includes('ивент')) {
+    } else if (lower.includes('репортаж') || lower.includes('празд') || lower.includes('событ')) {
       setSelectedFormatId('reportage');
     } else if (lower.includes('love') || lower.includes('дво') || lower.includes('пар')) {
       setSelectedFormatId('lovestory');
-    } else if (lower.includes('editorial') || lower.includes('бренд') || lower.includes('каталог')) {
-      setSelectedFormatId('editorial');
     } else {
       setSelectedFormatId('portrait');
     }
@@ -62,7 +61,7 @@ export default function App() {
 
   const handleRequestSimilar = (item: PortfolioItem) => {
     setSelectedFormatId(item.suggestedFormatId);
-    setBriefText(`${item.suggestedPrompt} (понравилась серия «${item.title}»)`);
+    setBriefText(item.suggestedPrompt);
     scrollToBooking();
   };
 
@@ -84,9 +83,9 @@ export default function App() {
           {/* Interactive WebGL Halftone Flow Hero sharing the full-landing shader */}
           <HalftoneFlowHero
             transparentStage
-            badge="Москва · Свадьбы, семья, портреты и репортаж"
+            badge="Свадьба · Портретная съёмка · Семейная фотосессия · Репортаж · Love story"
             title={'Снимаю людей, свадьбы\nи *настоящие эмоции*'}
-            description="Фотосессии без неловких поз и долгой подготовки. Напишите ниже, какую съёмку планируете, и выберите удобное время в календаре."
+            description="Фотосессии без неловких поз и долгой подготовки. Напишите ниже, какая съёмка нужна, или выберите удобное время на часах."
             prompts={HERO_PROMPTS}
             ctaLabel="Выбрать дату"
             onSubmit={handleHeroSubmit}
@@ -156,7 +155,7 @@ export default function App() {
             <div className="animate-marquee font-display text-lg italic tracking-wide text-[#FBF3EA]/65">
               {Array.from({ length: 6 }).map((_, idx) => (
                 <span key={idx} className="mx-6 whitespace-nowrap">
-                  свадьбы · семейные съёмки · портреты · love story · репортаж · бренды
+                  свадьба · портретная съёмка · семейная фотосессия · репортаж · love story для двоих
                 </span>
               ))}
             </div>
@@ -202,7 +201,7 @@ export default function App() {
             <div>
               <span className="font-display text-2xl font-medium text-[#FBF3EA]">exposure</span>
               <p className="mt-1 text-xs text-[#FBF3EA]/55">
-                Москва и Подмосковье · Свадьбы, семья, портреты, репортаж
+                Свадьба · Портретная съёмка · Семейная фотосессия · Репортаж · Love story
               </p>
             </div>
 

@@ -56,10 +56,16 @@ export function FormatConfigurator({
           </p>
         </div>
 
-        {/* 6 Shoot Format Cards in 3-col balanced grid */}
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {SHOOT_FORMATS.map((fmt) => {
+        {/* 5 Shoot Format Cards in balanced 6-col grid (3 top + 2 bottom) */}
+        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-6">
+          {SHOOT_FORMATS.map((fmt, idx) => {
             const isSelected = fmt.id === activeFormat.id;
+            const spanClass =
+              idx < 3
+                ? 'lg:col-span-2'
+                : idx === 3
+                ? 'lg:col-span-3'
+                : 'md:col-span-2 lg:col-span-3';
             return (
               <motion.button
                 key={fmt.id}
@@ -67,7 +73,7 @@ export function FormatConfigurator({
                 whileHover={{ y: -3 }}
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 onClick={() => onSelectFormat(fmt.id)}
-                className={`flex flex-col justify-between rounded-2xl border p-6 sm:p-7 text-left cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-[#FFB27C] ${
+                className={`${spanClass} flex flex-col justify-between rounded-2xl border p-6 sm:p-7 text-left cursor-pointer transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-[#FFB27C] ${
                   isSelected
                     ? 'border-[#FFB27C]/70 bg-[#1B1410]'
                     : 'border-white/10 bg-[#14100E] hover:border-white/25'

@@ -8,13 +8,12 @@ interface PortfolioGalleryProps {
 }
 
 const CATEGORIES: { id: PhotoCategory; label: string }[] = [
-  { id: 'all', label: 'Все' },
-  { id: 'wedding', label: 'Свадьбы' },
-  { id: 'family', label: 'Семейные' },
-  { id: 'portrait', label: 'Портреты' },
-  { id: 'lovestory', label: 'Для двоих' },
+  { id: 'all', label: 'Все услуги' },
+  { id: 'wedding', label: 'Свадьба' },
+  { id: 'portrait', label: 'Портретная съёмка' },
+  { id: 'family', label: 'Семейная фотосессия' },
   { id: 'reportage', label: 'Репортаж' },
-  { id: 'editorial', label: 'Бренды' },
+  { id: 'lovestory', label: 'Love story для двоих' },
 ];
 
 function TiltPhotoCard({
@@ -67,7 +66,7 @@ function TiltPhotoCard({
         {!imgError ? (
           <img
             src={item.image}
-            alt={`${item.title} — ${item.categoryLabel}`}
+            alt={item.title}
             referrerPolicy="no-referrer"
             onError={() => setImgError(true)}
             className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
@@ -102,16 +101,12 @@ function TiltPhotoCard({
           <ArrowUpRight size={16} />
         </span>
 
-        {/* Metadata & title without camera/EXIF params */}
+        {/* Clean service name & short description */}
         <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-[#FBF3EA]/75">
-            <span className="font-medium text-[#FFB27C]">{item.categoryLabel}</span>
-            <span aria-hidden="true">·</span>
-            <span>{item.location}</span>
-          </div>
-          <h3 className="mt-1.5 font-display text-2xl sm:text-3xl font-medium tracking-tight text-[#FBF3EA]">
+          <h3 className="font-display text-2xl sm:text-3xl font-medium tracking-tight text-[#FBF3EA]">
             {item.title}
           </h3>
+          <p className="mt-1 text-sm text-[#FBF3EA]/75">{item.subtitle}</p>
         </div>
       </button>
     </motion.div>
@@ -155,9 +150,9 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
     <section id="portfolio" className="mx-auto max-w-[1320px] px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-medium text-[#FFB27C]">Портфолио</p>
+          <p className="text-sm font-medium text-[#FFB27C]">Портфолио и услуги</p>
           <h2 className="mt-2 font-display text-4xl sm:text-5xl font-medium tracking-tight text-[#FBF3EA] max-w-xl">
-            Примеры последних съёмок
+            Какие съёмки я провожу
           </h2>
         </div>
 
@@ -176,7 +171,7 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
           {/* Filter tabs */}
           <div
             role="tablist"
-            aria-label="Фильтр серий фотографий"
+            aria-label="Услуги и примеры съёмок"
             className="flex flex-wrap items-center gap-1 rounded-xl border border-white/10 bg-[#161311] p-1"
           >
             {CATEGORIES.map((cat) => {
@@ -253,7 +248,7 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
                       <button
                         type="button"
                         onClick={() => stepLightbox(-1)}
-                        aria-label="Предыдущий кадр"
+                        aria-label="Предыдущая услуга"
                         className="absolute left-3 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/60 text-[#FBF3EA] cursor-pointer hover:border-[#FFB27C] hover:text-[#FFB27C]"
                       >
                         <ChevronLeft size={18} />
@@ -261,7 +256,7 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
                       <button
                         type="button"
                         onClick={() => stepLightbox(1)}
-                        aria-label="Следующий кадр"
+                        aria-label="Следующая услуга"
                         className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-black/60 text-[#FBF3EA] cursor-pointer hover:border-[#FFB27C] hover:text-[#FFB27C]"
                       >
                         <ChevronRight size={18} />
@@ -272,17 +267,12 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
 
                 <div className="flex flex-col justify-between p-6 sm:p-8 lg:col-span-5">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#FBF3EA]/65">
-                      <span className="text-[#FFB27C] font-medium">{selected.categoryLabel}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>{selected.year}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>{selected.location}</span>
-                    </div>
+                    <p className="text-xs font-medium text-[#FFB27C]">Услуга</p>
                     <h3 className="mt-2 font-display text-3xl font-medium text-[#FBF3EA]">
                       {selected.title}
                     </h3>
-                    <p className="mt-4 text-sm leading-relaxed text-[#FBF3EA]/80">{selected.story}</p>
+                    <p className="mt-1 text-sm text-[#FBF3EA]/65">{selected.subtitle}</p>
+                    <p className="mt-4 text-sm leading-relaxed text-[#FBF3EA]/85">{selected.story}</p>
                   </div>
 
                   <div className="mt-8 flex flex-col gap-3">
@@ -295,7 +285,7 @@ export function PortfolioGallery({ onRequestSimilar }: PortfolioGalleryProps) {
                       }}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#FBF3EA] px-5 py-3 text-sm font-semibold text-[#110D0B] whitespace-nowrap cursor-pointer transition-colors hover:bg-[#FFB27C]"
                     >
-                      Хочу такую съёмку
+                      Записаться на эту съёмку
                       <ArrowUpRight size={16} />
                     </button>
                     <button

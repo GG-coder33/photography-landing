@@ -63,15 +63,23 @@ const MONTH_GENITIVE: Record<number, string> = {
   11: 'декабря',
 };
 
-// Studio hours 09..20 mapped cleanly to true 12-hour dial slots (index 0 = 12 o'clock at 0deg)
-const CLOCK_HOURS = [12, 13, 14, 15, 16, 17, 18, 19, 20, 9, 10, 11];
+// Standard classic watch dial numerals (12 at top, then 1..11 clockwise)
+const CLASSIC_DIAL_NUMBERS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const TELEGRAM_HANDLE = 'Luccky33';
 
 function getLightMood(hour: number): string {
-  if (hour <= 11) return 'Утренний мягкий свет и свободные улицы для прогулки.';
-  if (hour <= 14) return 'Яркий дневной свет — хорошо для залов с большими окнами.';
-  if (hour <= 17) return 'Тёплое предзакатное солнце и мягкие тени на улице.';
-  return 'Вечер — подходит для студийного света или съёмки с огнями города.';
+  if (hour >= 5 && hour <= 11) return 'Утренний мягкий свет и свободные улицы для прогулки.';
+  if (hour >= 12 && hour <= 15) return 'Яркий дневной свет — хорошо для залов с большими окнами.';
+  if (hour >= 16 && hour <= 18) return 'Тёплое предзакатное солнце и мягкие тени на улице.';
+  return 'Вечер или ночь — подходит для студии, интерьера или огней города.';
+}
+
+function nextShortestAngle(prevAngle: number, targetMod360: number): number {
+  const currentMod = ((prevAngle % 360) + 360) % 360;
+  let delta = targetMod360 - currentMod;
+  if (delta > 180) delta -= 360;
+  if (delta < -180) delta += 360;
+  return prevAngle + delta;
 }
 
 export function BookingSection({
@@ -89,17 +97,23 @@ export function BookingSection({
     day: number;
   }>({ year: 2026, monthIndex: 10, day: 28 });
 
+  // Full 24h + 60m state (any time 00:00..23:59)
   const [selectedHour, setSelectedHour] = React.useState<number>(16);
-  const [selectedMinute, setSelectedMinute] = React.useState<'00' | '30'>('30');
+  const [selectedMinute, setSelectedMinute] = React.useState<number>(30);
+  const [dialMode, setDialMode] = React.useState<'hour' | 'minute'>('hour');
 
-  // Interactive clock dial drag & live moving second hand
-  const dialRef = React.useRef<HTMLDivElement | null>(null);
-  const [isDraggingDial, setIsDraggingDial] = React.useState(false);
-  const [dragAngle, setDragAngle] = React.useState<number | null>(null);
+  // Cumulative angles for smooth clockwise/counter-clockwise shortest-path hand motion
+  const [hourHandAngle, setHourHandAngle] = React.useState<number>(
+    (16 % 12) * 30 + 30 * 0.5
+  );
+  const [minuteHandAngle, setMinuteHandAngle] = React.useState<number>(30 * 6);
   const [secondAngle, setSecondAngle] = React.useState<number>(() => {
     const now = new Date();
     return (now.getSeconds() + now.getMilliseconds() / 1000) * 6;
   });
+
+  const dialRef = React.useRef<HTMLDivElement | null>(null);
+  const [isDraggingDial, setIsDraggingDial] = React.useState(false);
 
   const [name, setName] = React.useState('');
   const [contact, setContact] = React.useState('');
@@ -108,7 +122,17 @@ export function BookingSection({
   const [isReadyToSend, setIsReadyToSend] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
 
-  // Smoothly moving second hand around the clock face
+  const isPm = selectedHour >= 12;
+
+  // Keep mechanical hands synced via shortest angular path whenever time changes
+  React.useEffect(() => {
+    const targetHourDeg = (selectedHour % 12) * 30 + selectedMinute * 0.5;
+    const targetMinDeg = selectedMinute * 6;
+    setHourHandAngle((prev) => nextShortestAngle(prev, targetHourDeg));
+    setMinuteHandAngle((prev) => nextShortestAngle(prev, targetMinDeg));
+  }, [selectedHour, selectedMinute]);
+
+  // Continuously moving second hand around the clock face
   React.useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     let raf = 0;
@@ -122,31 +146,40 @@ export function BookingSection({
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const updateHourFromPointer = React.useCallback((clientX: number, clientY: number) => {
-    const el = dialRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = clientX - cx;
-    const dy = clientY - cy;
-    let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
-    if (deg < 0) deg += 360;
-    setDragAngle(deg);
-    const slotIndex = Math.round(deg / 30) % 12;
-    setSelectedHour(CLOCK_HOURS[slotIndex]);
-  }, []);
+  const updateTimeFromPointer = React.useCallback(
+    (clientX: number, clientY: number) => {
+      const el = dialRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+      let deg = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+      if (deg < 0) deg += 360;
+
+      if (dialMode === 'hour') {
+        const hour12 = Math.round(deg / 30) % 12; // 0..11 (0 represents 12 on dial)
+        const nextHour24 = isPm ? (hour12 === 0 ? 12 : hour12 + 12) : hour12;
+        setSelectedHour(nextHour24);
+      } else {
+        const min = Math.round(deg / 6) % 60;
+        setSelectedMinute(min);
+      }
+    },
+    [dialMode, isPm]
+  );
 
   const handleDialPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('button')) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsDraggingDial(true);
-    updateHourFromPointer(e.clientX, e.clientY);
+    updateTimeFromPointer(e.clientX, e.clientY);
   };
 
   const handleDialPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!isDraggingDial) return;
-    updateHourFromPointer(e.clientX, e.clientY);
+    updateTimeFromPointer(e.clientX, e.clientY);
   };
 
   const handleDialPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -155,7 +188,33 @@ export function BookingSection({
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
     setIsDraggingDial(false);
-    setDragAngle(null);
+  };
+
+  const handleClassicNumberClick = (dialNum: number) => {
+    if (dialMode === 'hour') {
+      const base12 = dialNum % 12; // 12 -> 0
+      const nextHour24 = isPm ? base12 + 12 : base12;
+      setSelectedHour(nextHour24);
+    } else {
+      const min = (dialNum % 12) * 5; // 12 -> 00, 1 -> 05 ... 11 -> 55
+      setSelectedMinute(min);
+    }
+  };
+
+  const togglePeriod = (pm: boolean) => {
+    setSelectedHour((prev) => {
+      const mod12 = prev % 12;
+      return pm ? mod12 + 12 : mod12;
+    });
+  };
+
+  const handleDirectTimeChange = (value: string) => {
+    const match = /^(\d{2}):(\d{2})$/.exec(value);
+    if (!match) return;
+    const h = Math.min(23, Math.max(0, Number(match[1])));
+    const m = Math.min(59, Math.max(0, Number(match[2])));
+    setSelectedHour(h);
+    setSelectedMinute(m);
   };
 
   const activeMonth = CALENDAR_MONTHS[monthCursor];
@@ -166,12 +225,7 @@ export function BookingSection({
     activeFormat.price + activeAddons.reduce((sum, item) => sum + item.price, 0);
 
   const formattedDate = `${selectedDay.day} ${MONTH_GENITIVE[selectedDay.monthIndex]} ${selectedDay.year}`;
-  const formattedTime = `${String(selectedHour).padStart(2, '0')}:${selectedMinute}`;
-
-  // Clock hand angles
-  const targetHourAngle = (selectedHour % 12) * 30 + (selectedMinute === '30' ? 15 : 0);
-  const hourAngle = isDraggingDial && dragAngle !== null ? dragAngle : targetHourAngle;
-  const minuteAngle = selectedMinute === '30' ? 180 : 0;
+  const formattedTime = `${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`;
 
   const switchMonth = (dir: -1 | 1) => {
     const next = monthCursor + dir;
@@ -182,14 +236,14 @@ export function BookingSection({
 
   const buildTelegramMessage = () => {
     const lines = [
-      'Привет! Хочу записаться на фотосессию (exposure).',
+      'Привет! Хочу записаться на съёмку (exposure).',
       '',
-      `Формат: ${activeFormat.title}`,
+      `Услуга: ${activeFormat.title}`,
       `Дата и время: ${formattedDate}, ${formattedTime}`,
       activeAddons.length
         ? `Доп. опции: ${activeAddons.map((a) => a.label).join(', ')}`
         : 'Доп. опции: базовый пакет',
-      `Ориентир по бюджету: ${formatRubles(totalPrice)}`,
+      `Ориентировочная стоимость: ${formatRubles(totalPrice)}`,
       '',
       `Имя: ${name.trim()}`,
       `Контакт: ${contact.trim() || email.trim()}`,
@@ -239,6 +293,11 @@ export function BookingSection({
     }
   };
 
+  // Highlighted classic numeral depending on mode
+  const activeHourDialNum = selectedHour % 12 === 0 ? 12 : selectedHour % 12;
+  const activeMinuteDialNum =
+    selectedMinute % 5 === 0 ? (selectedMinute === 0 ? 12 : selectedMinute / 5) : null;
+
   return (
     <section
       id="booking"
@@ -251,8 +310,8 @@ export function BookingSection({
             Выберите дату и время на часах
           </h2>
           <p className="mt-4 text-base leading-relaxed text-[#FBF3EA]/75">
-            Нажмите на свободный день в календаре, покрутите или кликните час на циферблате — и
-            отправьте готовую заявку мне в Telegram{' '}
+            Нажмите на свободный день в календаре, выставьте любое время на часах (переключая
+            часы, минуты или 24-часовой формат) и отправьте заявку мне в Telegram{' '}
             <a
               href={`https://t.me/${TELEGRAM_HANDLE}`}
               target="_blank"
@@ -266,7 +325,7 @@ export function BookingSection({
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-12 items-start">
-          {/* Left column: Animated Monthly Calendar + Moving/Draggable Analog Clock */}
+          {/* Left column: Animated Monthly Calendar + Classic Moving Analog Clock */}
           <div className="lg:col-span-6 space-y-6">
             {/* Monthly Calendar */}
             <div className="rounded-2xl border border-white/12 bg-[#14100E]/85 backdrop-blur-md p-5 sm:p-6">
@@ -368,94 +427,152 @@ export function BookingSection({
               </div>
             </div>
 
-            {/* Interactive Clock Dial with moving second hand & draggable hour hand */}
+            {/* Classic Analog Clock Dial (12, 1..11) supporting ANY 24h + 00..59 time */}
             <div className="rounded-2xl border border-white/12 bg-[#14100E]/85 backdrop-blur-md p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-[#FBF3EA]">
                   <Clock size={16} className="text-[#FFB27C]" aria-hidden="true" />
-                  <span>Время начала съёмки</span>
+                  <span>Время съёмки</span>
                 </div>
 
-                {/* Minute step toggle (:00 / :30) */}
-                <div
-                  role="group"
-                  aria-label="Выбор минут"
-                  className="inline-flex items-center rounded-lg border border-white/15 bg-[#0B0A09]/80 p-0.5"
-                >
-                  {(['00', '30'] as const).map((min) => {
-                    const active = selectedMinute === min;
-                    return (
-                      <button
-                        key={min}
-                        type="button"
-                        onClick={() => setSelectedMinute(min)}
-                        className={`relative rounded-md px-3 py-1 font-mono-tech text-xs cursor-pointer transition-colors ${
-                          active ? 'text-[#110D0B] font-semibold' : 'text-[#FBF3EA]/70 hover:text-[#FBF3EA]'
-                        }`}
-                      >
-                        {active && (
-                          <motion.span
-                            layoutId="clock-minute-pill"
-                            transition={{ type: 'spring', stiffness: 420, damping: 30 }}
-                            className="absolute inset-0 rounded-md bg-[#FBF3EA]"
-                          />
-                        )}
-                        <span className="relative z-10">:{min}</span>
-                      </button>
-                    );
-                  })}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Dial mode: Hour hand vs Minute hand */}
+                  <div
+                    role="group"
+                    aria-label="Что выставлять на циферблате"
+                    className="inline-flex items-center rounded-lg border border-white/15 bg-[#0B0A09]/80 p-0.5"
+                  >
+                    {(
+                      [
+                        { id: 'hour', label: 'Часы' },
+                        { id: 'minute', label: 'Минуты' },
+                      ] as const
+                    ).map((mode) => {
+                      const active = dialMode === mode.id;
+                      return (
+                        <button
+                          key={mode.id}
+                          type="button"
+                          onClick={() => setDialMode(mode.id)}
+                          className={`relative rounded-md px-2.5 py-1 text-xs cursor-pointer transition-colors whitespace-nowrap ${
+                            active
+                              ? 'text-[#110D0B] font-semibold'
+                              : 'text-[#FBF3EA]/70 hover:text-[#FBF3EA]'
+                          }`}
+                        >
+                          {active && (
+                            <motion.span
+                              layoutId="clock-dial-mode"
+                              transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                              className="absolute inset-0 rounded-md bg-[#FBF3EA]"
+                            />
+                          )}
+                          <span className="relative z-10">{mode.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Period toggle: 00-11 vs 12-23 */}
+                  <div
+                    role="group"
+                    aria-label="Время суток"
+                    className="inline-flex items-center rounded-lg border border-white/15 bg-[#0B0A09]/80 p-0.5"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => togglePeriod(false)}
+                      className={`relative rounded-md px-2.5 py-1 font-mono-tech text-xs cursor-pointer transition-colors whitespace-nowrap ${
+                        !isPm
+                          ? 'bg-[#FFB27C] text-[#110D0B] font-semibold'
+                          : 'text-[#FBF3EA]/70 hover:text-[#FBF3EA]'
+                      }`}
+                    >
+                      00–11
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => togglePeriod(true)}
+                      className={`relative rounded-md px-2.5 py-1 font-mono-tech text-xs cursor-pointer transition-colors whitespace-nowrap ${
+                        isPm
+                          ? 'bg-[#FFB27C] text-[#110D0B] font-semibold'
+                          : 'text-[#FBF3EA]/70 hover:text-[#FBF3EA]'
+                      }`}
+                    >
+                      12–23
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div className="mt-6 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-between">
-                {/* Analog Clock Dial */}
+                {/* Classic Analog Clock Face (12, 1, 2 .. 11) */}
                 <div
                   ref={dialRef}
                   onPointerDown={handleDialPointerDown}
                   onPointerMove={handleDialPointerMove}
                   onPointerUp={handleDialPointerUp}
                   onPointerCancel={handleDialPointerUp}
-                  className="relative h-60 w-60 shrink-0 select-none touch-none rounded-full border border-white/15 bg-[#0B0A09]/90 shadow-inner cursor-grab active:cursor-grabbing"
+                  className="relative h-64 w-64 shrink-0 select-none touch-none rounded-full border border-white/15 bg-[#0B0A09]/92 shadow-inner cursor-grab active:cursor-grabbing"
                 >
-                  {/* Concentric dial ring & tick marks */}
+                  {/* Concentric inner ring */}
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute inset-3 rounded-full border border-white/[0.06]"
-                  />
-                  {Array.from({ length: 12 }).map((_, idx) => (
-                    <div
-                      key={idx}
-                      aria-hidden="true"
-                      style={{ transform: `rotate(${idx * 30}deg)` }}
-                      className="pointer-events-none absolute left-1/2 top-2 h-1.5 w-px -ml-[0.5px] origin-[50%_112px] bg-white/15"
-                    />
-                  ))}
-
-                  {/* Minute Hand */}
-                  <motion.div
-                    aria-hidden="true"
-                    animate={{ rotate: minuteAngle }}
-                    transition={{ type: 'spring', stiffness: 180, damping: 20 }}
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-[88px] w-0.5 -ml-[1px] -mt-[88px] origin-bottom rounded-full bg-white/30"
+                    className="pointer-events-none absolute inset-3.5 rounded-full border border-white/[0.06]"
                   />
 
-                  {/* Interactive Hour Hand */}
+                  {/* 60 classic minute tick marks */}
+                  {Array.from({ length: 60 }).map((_, idx) => {
+                    const isMajor = idx % 5 === 0;
+                    return (
+                      <div
+                        key={idx}
+                        aria-hidden="true"
+                        style={{ transform: `rotate(${idx * 6}deg)` }}
+                        className={`pointer-events-none absolute left-1/2 top-1.5 -ml-[0.5px] origin-[50%_122px] ${
+                          isMajor ? 'h-2 w-px bg-white/30' : 'h-1 w-px bg-white/10'
+                        }`}
+                      />
+                    );
+                  })}
+
+                  {/* Classic Minute Hand */}
                   <motion.div
                     aria-hidden="true"
-                    animate={{ rotate: hourAngle }}
+                    animate={{ rotate: minuteHandAngle }}
                     transition={
-                      isDraggingDial
+                      isDraggingDial && dialMode === 'minute'
                         ? { duration: 0 }
-                        : { type: 'spring', stiffness: 240, damping: 22 }
+                        : { type: 'spring', stiffness: 200, damping: 22 }
                     }
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-[72px] w-1 -ml-0.5 -mt-[72px] origin-bottom rounded-full bg-[#FFB27C] shadow-[0_0_16px_rgba(255,178,124,0.55)]"
+                    className={`pointer-events-none absolute left-1/2 top-1/2 h-[92px] w-0.5 -ml-[1px] -mt-[92px] origin-bottom rounded-full transition-colors ${
+                      dialMode === 'minute'
+                        ? 'bg-[#FFB27C] shadow-[0_0_14px_rgba(255,178,124,0.55)]'
+                        : 'bg-[#FBF3EA]/55'
+                    }`}
                   />
 
-                  {/* Continuously moving Second Hand */}
+                  {/* Classic Hour Hand */}
+                  <motion.div
+                    aria-hidden="true"
+                    animate={{ rotate: hourHandAngle }}
+                    transition={
+                      isDraggingDial && dialMode === 'hour'
+                        ? { duration: 0 }
+                        : { type: 'spring', stiffness: 220, damping: 24 }
+                    }
+                    className={`pointer-events-none absolute left-1/2 top-1/2 h-[66px] w-1.5 -ml-[3px] -mt-[66px] origin-bottom rounded-full transition-colors ${
+                      dialMode === 'hour'
+                        ? 'bg-[#FFB27C] shadow-[0_0_16px_rgba(255,178,124,0.55)]'
+                        : 'bg-[#FBF3EA]/80'
+                    }`}
+                  />
+
+                  {/* Live Continuously Moving Second Hand */}
                   <div
                     aria-hidden="true"
                     style={{ transform: `rotate(${secondAngle}deg)` }}
-                    className="pointer-events-none absolute left-1/2 top-1/2 h-[108px] w-px -ml-[0.5px] -mt-[94px] origin-[50%_94px] bg-[#FFB27C]/75"
+                    className="pointer-events-none absolute left-1/2 top-1/2 h-[112px] w-px -ml-[0.5px] -mt-[96px] origin-[50%_96px] bg-[#FFB27C]/80"
                   />
 
                   {/* Center pin */}
@@ -464,50 +581,61 @@ export function BookingSection({
                     className="pointer-events-none absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#0B0A09] bg-[#FFB27C]"
                   />
 
-                  {/* 12 Clickable Hour Buttons (09..20) */}
-                  {CLOCK_HOURS.map((hour, index) => {
+                  {/* Classic Dial Numerals: 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 */}
+                  {CLASSIC_DIAL_NUMBERS.map((num, index) => {
                     const angleRad = ((index * 30 - 90) * Math.PI) / 180;
-                    const radius = 92;
-                    const x = 120 + radius * Math.cos(angleRad);
-                    const y = 120 + radius * Math.sin(angleRad);
-                    const isSelected = selectedHour === hour;
+                    const radius = 96; // px from center (256px diameter => center 128px)
+                    const x = 128 + radius * Math.cos(angleRad);
+                    const y = 128 + radius * Math.sin(angleRad);
+                    const isSelected =
+                      dialMode === 'hour'
+                        ? activeHourDialNum === num
+                        : activeMinuteDialNum === num;
 
                     return (
                       <button
-                        key={hour}
+                        key={num}
                         type="button"
-                        onClick={() => setSelectedHour(hour)}
+                        onClick={() => handleClassicNumberClick(num)}
                         style={{ left: `${x}px`, top: `${y}px` }}
-                        className={`absolute -translate-x-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full font-mono-tech text-xs transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#FFB27C] ${
+                        className={`absolute -translate-x-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full font-mono-tech text-sm transition-all duration-150 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#FFB27C] ${
                           isSelected
-                            ? 'bg-[#FFB27C] text-[#110D0B] font-bold scale-110 shadow-[0_0_20px_rgba(255,178,124,0.45)]'
-                            : 'text-[#FBF3EA]/75 hover:bg-white/10 hover:text-[#FBF3EA]'
+                            ? 'bg-[#FFB27C] text-[#110D0B] font-bold scale-110 shadow-[0_0_18px_rgba(255,178,124,0.45)]'
+                            : 'text-[#FBF3EA]/85 hover:bg-white/10 hover:text-[#FBF3EA]'
                         }`}
                       >
-                        {hour}
+                        {num}
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Live Digital Time & Light Mood */}
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="text-xs text-[#FBF3EA]/55">Начало съёмки</p>
-                  <motion.p
-                    key={formattedTime}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.18 }}
-                    className="mt-1 font-mono-tech text-4xl font-medium tracking-tight text-[#FBF3EA]"
-                  >
+                {/* Live Digital Time + Exact Any-Time Picker */}
+                <div className="flex-1 w-full text-center sm:text-left">
+                  <p className="text-xs text-[#FBF3EA]/55">Выбранное время</p>
+                  <p className="mt-1 font-mono-tech text-4xl font-medium tracking-tight text-[#FBF3EA]">
                     {formattedTime}
-                  </motion.p>
+                  </p>
                   <p className="mt-1 font-mono-tech text-xs text-[#FFB27C]">
                     {formattedDate}
                   </p>
-                  <p className="mt-1.5 text-[11px] text-[#FBF3EA]/45">
-                    Нажмите на цифру или потяните стрелку
-                  </p>
+
+                  {/* Direct 24h time input so ANY exact minute (e.g. 07:17 or 21:43) can be set instantly */}
+                  <div className="mt-4">
+                    <label
+                      htmlFor="exact-time-input"
+                      className="block text-[11px] text-[#FBF3EA]/55"
+                    >
+                      Или введите любое время точно до минуты:
+                    </label>
+                    <input
+                      id="exact-time-input"
+                      type="time"
+                      value={formattedTime}
+                      onChange={(e) => handleDirectTimeChange(e.target.value)}
+                      className="mt-1.5 w-full sm:w-auto rounded-xl border border-white/15 bg-[#0B0A09]/90 px-3.5 py-2 font-mono-tech text-sm text-[#FBF3EA] focus:border-[#FFB27C] focus:outline-none [color-scheme:dark]"
+                    />
+                  </div>
 
                   <div className="mt-4 flex items-start justify-center sm:justify-start gap-2 rounded-xl border border-white/10 bg-[#0B0A09]/75 p-3 text-left">
                     <Sun
@@ -534,7 +662,7 @@ export function BookingSection({
               >
                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
                   <div>
-                    <p className="text-xs text-[#FBF3EA]/55">Выбранный формат</p>
+                    <p className="text-xs text-[#FBF3EA]/55">Выбранная услуга</p>
                     <p className="mt-0.5 font-display text-2xl text-[#FBF3EA]">
                       {activeFormat.title}
                     </p>
@@ -547,10 +675,10 @@ export function BookingSection({
                   </div>
                 </div>
 
-                {/* Quick format switcher inside form */}
+                {/* Quick service switcher */}
                 <div className="mt-5">
                   <label className="block text-xs font-medium text-[#FBF3EA]/70">
-                    Формат съёмки
+                    Услуга
                   </label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {SHOOT_FORMATS.map((fmt) => {
@@ -613,7 +741,7 @@ export function BookingSection({
                     htmlFor="booking-email"
                     className="block text-xs font-medium text-[#FBF3EA]/75"
                   >
-                    Email для ссылки на фото (если удобно)
+                    Email для ссылки на фото (по желанию)
                   </label>
                   <input
                     id="booking-email"
@@ -684,7 +812,7 @@ export function BookingSection({
                 <p className="mt-2 text-sm leading-relaxed text-[#FBF3EA]/75">
                   Нажмите на кнопку ниже — откроется ваш личный чат с{' '}
                   <span className="font-medium text-[#FBF3EA]">@{TELEGRAM_HANDLE}</span>, где уже
-                  вставлен весь текст заявки с выбранной датой и стоимостью.
+                  вставлен весь текст заявки с выбранной датой и временем.
                 </p>
 
                 <pre className="mt-5 whitespace-pre-wrap rounded-xl border border-white/10 bg-[#0B0A09]/90 p-4 font-mono-tech text-xs leading-relaxed text-[#FBF3EA]/85">
@@ -726,4 +854,8 @@ export function BookingSection({
       </div>
     </section>
   );
+}
+
+function activeAddonItemsSum(items: { price: number }[]): number {
+  return items.reduce((sum, item) => sum + item.price, 0);
 }
